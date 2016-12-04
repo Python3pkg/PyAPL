@@ -115,5 +115,5 @@ def apl(string, useLPN = False): # useLPN = use Local Python Namespace (share AP
 
 
 
-
-print(apl('(/5-7)+/15'))
+if __name__ == '__main__':
+    print(apl('(/5-7)+/15'))
