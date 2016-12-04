@@ -1,4 +1,5 @@
 import ply.lex as lex
+from src.__init__ import APLobj
 
 class APLexer(object):
 
@@ -29,12 +30,14 @@ class APLexer(object):
     def t_VECTORLIT(self,t):     # Matches vector literals (i.e. '234 23 11')
         r'(\d+)([^\S\n]+\d+)+'
         t.value = list(map(int, t.value.split(' ')))  # Turn it into a list of the numbers
+        t.value = APLobj(t.value, len(t.value))  # Turn it into an APLobj
         return t
 
     # A regular expression rule with some action code
     def t_NUMBERLIT(self,t):
         r'\d+'
         t.value = int(t.value)
+        t.value = APLobj(t.value, 0)
         return t
 
     # Define a rule so we can track line numbers
