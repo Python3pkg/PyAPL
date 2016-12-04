@@ -5,6 +5,21 @@ logging.basicConfig(filename='PyPL.log', level=logging.DEBUG)
 from src import APLex
 from collections import namedtuple
 
+from math import exp, log, pi, sin, sinh, cos, cosh, tan, tanh,\
+    asin, asinh, acos, acosh, atan, atanh
+
+def gcd(a, b):
+    """Compute the greatest common divisor of a and b"""
+    while b > 0:
+        a, b = b, a % b
+    return a
+
+
+def lcm(a, b):
+    """Compute the lowest common multiple of a and b"""
+    return a * b / gcd(a, b)
+
+
 # NOTE: If an APLobj's size is 0,
 # it's value should be an INT, not a list
 APLobj = namedtuple('Data', 'value, shape')
@@ -16,7 +31,7 @@ scalarFuncs = '+ - × ÷ | ⌈ ⌊ * ⍟ ○ ! ^ ∨ ⍲ ⍱ < ≤ = ≥ > ≠'
 # Mixed functions do something else
 # NOTE that the monadic versions of ~ and ? are scalar, while the diadic versions
 # are actually mixed.
-mixedFuncs = '⍴ , ⍪ ⌽ ⊖ ⍉ ↑ ↓ / ⌿ \ ⍀ ⍳ ∊ ⍋ ⍒ ? ⌹ ⊥ ⊤ ⍕ ⍎ ⊂ ⊃ ≡ ⍷ ⌷ ~ ?'
+mixedFuncs = '⊢ ⊣ ⍴ , ⍪ ⌽ ⊖ ⍉ ↑ ↓ / ⌿ \ ⍀ ⍳ ∊ ⍋ ⍒ ? ⌹ ⊥ ⊤ ⍕ ⍎ ⊂ ⊃ ≡ ⍷ ⌷ ~ ?'
 
 # Returns: False for unmatched types [2 3 4 = 3 4]
 # 1 for scalar scalar [3 + 43]
@@ -33,6 +48,9 @@ def typeargs(a, w):
     else:
         return 1
 
+def arebool(a, w):
+    return (a.value == 0 or a.value == 1) and (w.value == 0 or w.value == 1)
+
 
 def subapplydi(func, a, w):
     if func == '+':
@@ -43,8 +61,44 @@ def subapplydi(func, a, w):
         return APLobj(a.value / w.value,0)
     elif func == '×':
         return APLobj(a.value * w.value,0)
+    elif func == '*':
+        return APLobj(a.value ** w.value,0)
+    elif func == '⍟':
+        return APLobj(log(w.value, a.value),0)
+    elif func == '○':
+        if a.value not in (1,2,3,5,6,7, -1,-2,-3,-5,-6,-7):
+            logging.fatal('Invalid argument to ○: ' + str(a.value) + ' [Undefined behavior]')
+            return w
+        else:  # There's no better way to do this
+            if a.value == 1:
+                return APLobj(sin(a.value),0)
+            elif a.value == 2:
+                return APLobj(cos(a.value),0)
+            elif a.value == 3:
+                return APLobj(tan(a.value),0)
+            elif a.value == 5:
+                return APLobj(sinh(a.value),0)
+            elif a.value == 6:
+                return APLobj(cosh(a.value),0)
+            elif a.value == 7:
+                return APLobj(tanh(a.value),0)
+            # Inverse functions
+            elif a.value == -1:
+                return APLobj(asin(a.value), 0)
+            elif a.value == -2:
+                return APLobj(acos(a.value), 0)
+            elif a.value == -3:
+                return APLobj(atan(a.value), 0)
+            elif a.value == -5:
+                return APLobj(asinh(a.value),0)
+            elif a.value == -6:
+                return APLobj(acosh(a.value),0)
+            elif a.value == -7:
+                return APLobj(atanh(a.value),0)
     elif func == '=':
         return APLobj((1 if a.value == w.value else 0),0)
+    elif func == '≠':
+        return APLobj((1 if a.value != w.value else 0), 0)
     elif func == '<':
         return APLobj((1 if a.value < w.value else 0),0)
     elif func == '>':
@@ -53,6 +107,20 @@ def subapplydi(func, a, w):
         return APLobj((1 if a.value >= w.value else 0),0)
     elif func == '≤':
         return APLobj((1 if a.value <= w.value else 0),0)
+    elif func == '^':
+        if arebool(a, w):
+            return APLobj(1 if (a.value == 1 and w.value == 1) else 0)
+        else:
+            return APLobj(lcm(a.value, w.value), a.size)
+    elif func == '∨':
+        if arebool(a, w):
+            return APLobj(1 if (a.value == 1 or w.value == 1) else 0)
+        else:
+            return APLobj(gcd(a.value, w.value), a.size)
+    elif func == '⊢':
+        return w
+    elif func == '⊣':
+        return a
     else:
         logging.error('Function not yet supported: ' + func)
         raise NotImplementedError()
@@ -91,6 +159,12 @@ def applydi(func, a, w):
 def subapplymo(func, w):
     if func == '÷':
         return APLobj(1 / w.value,0)
+    elif func == '*':
+        return APLobj(exp(w.value),0)
+    elif func == '⍟':
+        return APLobj(log(w.value),0)
+    elif func == '○':
+        return APLobj(pi * w.value,0)
     elif func == '⍳':
         # Ioda
         ### "COUNT" function ###
@@ -110,6 +184,16 @@ def subapplymo(func, w):
         else:
             # When it is multi-dimensional
             return APLobj(w.shape, len(w.shape))
+    elif func == '~':
+        # Tilde
+        ### "NEGATE" function ###
+        if w.value == 1:
+            return APLobj(0,0)
+        else:
+            return APLobj(1,0)
+    elif func in '⊢⊣':
+        ### "IDENTITY" functions ###
+        return w
     else:
         logging.error('Function not yet supported: ' + func)
         raise NotImplementedError()  # TODO: continue implementing primitive functions
@@ -118,7 +202,7 @@ def subapplymo(func, w):
 def applymo(func, w):
     logging.info(('applymo: ' + str(func) + ' ' + str(w)).encode('utf-8'))
     applied = APLobj([],0)
-    if func in scalarFuncs:
+    if func in scalarFuncs or func in '~?':
         if w.shape == 0:
             return subapplymo(func, w)
         else:
@@ -228,6 +312,7 @@ def apl(string, useLPN=False):  # useLPN = use Local Python Namespace (share APL
 
 
 if __name__ == '__main__':
+    # TODO: Turn these into tests instead of dumb comments
     # print(apl('(÷5-7)+÷15'))
     # print(apl('2 3 4 + 1 2 1'))
     # print(apl('1 2 3 4 × 4'))
@@ -238,6 +323,7 @@ if __name__ == '__main__':
     # except RuntimeError:
     #     print('test passed; mixed lengths error')
     # print(apl('(÷1 253 3) - (÷3 2 1)'))
+    # print(apl('~ 1 0 0 0 1'))
     while(True):
         e = apl(input('>>>')).value
         if isinstance(e, list):
