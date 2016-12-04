@@ -8,4 +8,5 @@ Interactive mode and file mode are yet to be implemented.
 Example implementation:
 
     from pyAPL.src import *
-    print(apl('(/5-7)+/15'))
+    print(apl('(÷5-7)+÷15'))
+    print(apl('(÷1 253 3) - (÷3 2 1)'))
