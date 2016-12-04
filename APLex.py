@@ -59,7 +59,6 @@ class APLexer(object):
 
 
     def inp(self, data):
-        print(data + ' :')
         self.lexer.input(data)
         returndat = []
         while True:

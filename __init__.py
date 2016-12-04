@@ -18,12 +18,6 @@ scalarFuncs = '+ - × ÷ | ⌈ ⌊ * ⍟ ○ ! ^ ∨ ⍲ ⍱ < ≤ = ≥ > ≠'
 # are actually mixed.
 mixedFuncs = '⍴ , ⍪ ⌽ ⊖ ⍉ ↑ ↓ / ⌿ \ ⍀ ⍳ ∊ ⍋ ⍒ ? ⌹ ⊥ ⊤ ⍕ ⍎ ⊂ ⊃ ≡ ⍷ ⌷ ~ ?'
 
-
-# @begin.start
-# def run(file: 'The input file path', output: 'The output file path'):
-#
-#     pass
-
 # Returns: False for unmatched types [2 3 4 = 3 4]
 # 1 for scalar scalar [3 + 43]
 # 2 for scalar table/vector [3 - 14 23 11] OR [41 12 1 > 4]
@@ -234,13 +228,19 @@ def apl(string, useLPN=False):  # useLPN = use Local Python Namespace (share APL
 
 
 if __name__ == '__main__':
-    print(apl('(÷5-7)+÷15'))
-    print(apl('2 3 4 + 1 2 1'))
-    print(apl('1 2 3 4 × 4'))
-    print(apl('7 + 4 2 1 5 × ⍳4'))
-    print(apl('(1 2 3 4 × 4)<(7 + 4 2 1 5 × ⍳4)'))
-    try:
-        print(apl('4 2 1 5 × 1 2 3'))
-    except RuntimeError:
-        print('test passed; mixed lengths error')
-    print(apl('(÷1 253 3) - (÷3 2 1)'))
+    # print(apl('(÷5-7)+÷15'))
+    # print(apl('2 3 4 + 1 2 1'))
+    # print(apl('1 2 3 4 × 4'))
+    # print(apl('7 + 4 2 1 5 × ⍳4'))
+    # print(apl('(1 2 3 4 × 4)<(7 + 4 2 1 5 × ⍳4)'))
+    # try:
+    #     print(apl('4 2 1 5 × 1 2 3'))
+    # except RuntimeError:
+    #     print('test passed; mixed lengths error')
+    # print(apl('(÷1 253 3) - (÷3 2 1)'))
+    while(True):
+        e = apl(input('>>>')).value
+        if isinstance(e, list):
+            print(' '.join(str(x) for x in e))
+        else:
+            print(e)
