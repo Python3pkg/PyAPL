@@ -2,7 +2,7 @@ import begin
 import logging
 
 logging.basicConfig(filename='PyAPL.log', level=logging.DEBUG)
-from src.PyAPL import APLex
+from PyAPL import APLex
 from collections import namedtuple
 
 from math import exp, log, pi, sin, sinh, cos, cosh, tan, tanh, \

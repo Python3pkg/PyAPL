@@ -1,5 +1,5 @@
 import ply.lex as lex
-from src.PyAPL import *
+from PyAPL import *
 from collections import namedtuple
 APLobj = namedtuple('Data', 'value, shape')
 
