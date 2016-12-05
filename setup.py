@@ -11,7 +11,6 @@ setup(
   keywords = ['interpreter', 'APL'],
   classifiers = [],
   install_requires=[
-          'ply',
-          'collections'
+          'ply'
       ]
 )
