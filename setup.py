@@ -10,4 +10,8 @@ setup(
   download_url = 'https://github.com/Torrencem/PyAPL/tarball/0.1.1',
   keywords = ['interpreter', 'APL'],
   classifiers = [],
+  install_requires=[
+          'ply',
+          'collections'
+      ]
 )
