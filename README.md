@@ -8,6 +8,6 @@ Interactive mode and file mode are yet to be implemented.
 Example implementation:
 
     from pyAPL.src import *
-    print(apl('(÷5-7)+÷15'))
-    print(apl('(÷1 253 3) - (÷3 2 1)'))
-    print(apl('(1 2 3 4 × 4)<(7 + 4 2 1 5 × ⍳4)'))
+    print(apl('(÷5-7)+÷15').value)
+    print(apl('(÷1 253 3) - (÷3 2 1)').value)
+    print(apl('(1 2 3 4 × 4)<(7 + 4 2 1 5 × ⍳4)').value)
