@@ -2,7 +2,7 @@ from distutils.core import setup
 setup(
   name = 'PyAPL',
   packages = ['PyAPL'],
-  version = '0.1.2',
+  version = '0.1.02',
   description = 'A Python interpreter for the APL programming language',
   author = 'Matt Torrence',
   author_email = 'matt@torrencefamily.net',
