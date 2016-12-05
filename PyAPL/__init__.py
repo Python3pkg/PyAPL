@@ -1,7 +1,7 @@
 import begin
 import logging
 
-logging.basicConfig(filename='PyPL.log', level=logging.DEBUG)
+logging.basicConfig(filename='PyAPL.log', level=logging.DEBUG)
 from src.PyAPL import APLex
 from collections import namedtuple
 

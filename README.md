@@ -3,7 +3,7 @@ A python implementation of the APL programming language
 
 NOTE: This is in no way a complete project. So far, it works with fairly simple code samples. There is a LOT of features and testing that must be added
 
-Interactive mode and file mode are yet to be implemented.
+A file mode is yet to be implemented.
 
 Example implementation:
 
