@@ -1,5 +1,7 @@
 import unittest
-from src.PyAPL import apl, APLobj
+from src.PyAPL import *
+from collections import namedtuple
+APLobj = namedtuple('Data', 'value, shape')
 
 class TestAPLPrograms(unittest.TestCase):
 

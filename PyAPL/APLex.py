@@ -1,5 +1,7 @@
 import ply.lex as lex
-from src.PyAPL import APLobj
+from src.PyAPL import *
+from collections import namedtuple
+APLobj = namedtuple('Data', 'value, shape')
 
 class APLexer(object):
 
