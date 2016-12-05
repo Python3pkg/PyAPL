@@ -5,8 +5,10 @@ logging.basicConfig(filename='PyPL.log', level=logging.DEBUG)
 from src import APLex
 from collections import namedtuple
 
-from math import exp, log, pi, sin, sinh, cos, cosh, tan, tanh,\
-    asin, asinh, acos, acosh, atan, atanh
+from math import exp, log, pi, sin, sinh, cos, cosh, tan, tanh, \
+    asin, asinh, acos, acosh, atan, atanh, fmod
+from decimal import Decimal
+
 
 def gcd(a, b):
     """Compute the greatest common divisor of a and b"""
@@ -33,6 +35,7 @@ scalarFuncs = '+ - × ÷ | ⌈ ⌊ * ⍟ ○ ! ^ ∨ ⍲ ⍱ < ≤ = ≥ > ≠'
 # are actually mixed.
 mixedFuncs = '⊢ ⊣ ⍴ , ⍪ ⌽ ⊖ ⍉ ↑ ↓ / ⌿ \ ⍀ ⍳ ∊ ⍋ ⍒ ? ⌹ ⊥ ⊤ ⍕ ⍎ ⊂ ⊃ ≡ ⍷ ⌷ ~ ?'
 
+
 # Returns: False for unmatched types [2 3 4 = 3 4]
 # 1 for scalar scalar [3 + 43]
 # 2 for scalar table/vector [3 - 14 23 11] OR [41 12 1 > 4]
@@ -48,40 +51,45 @@ def typeargs(a, w):
     else:
         return 1
 
+
 def arebool(a, w):
     return (a.value == 0 or a.value == 1) and (w.value == 0 or w.value == 1)
 
 
 def subapplydi(func, a, w):
     if func == '+':
-        return APLobj(a.value + w.value,0)
+        return APLobj(a.value + w.value, 0)
     elif func == '-':
-        return APLobj(a.value - w.value,0)
+        return APLobj(a.value - w.value, 0)
     elif func == '÷':
-        return APLobj(a.value / w.value,0)
+        return APLobj(a.value / w.value, 0)
     elif func == '×':
-        return APLobj(a.value * w.value,0)
+        return APLobj(a.value * w.value, 0)
     elif func == '*':
-        return APLobj(a.value ** w.value,0)
+        return APLobj(a.value ** w.value, 0)
     elif func == '⍟':
-        return APLobj(log(w.value, a.value),0)
+        return APLobj(log(w.value, a.value), 0)
+    elif func == '|':
+        # Why did I convert to a string then to a decimal? Because computers are dumb
+        # http://stackoverflow.com/questions/14763722/python-modulo-on-floats
+        return APLobj(float(Decimal(str(w.value)) % Decimal(str(a.value))), 0)
     elif func == '○':
-        if a.value not in (1,2,3,5,6,7, -1,-2,-3,-5,-6,-7):
+        if a.value not in (1, 2, 3, 5, 6, 7, -1, -2, -3, -5, -6, -7):
             logging.fatal('Invalid argument to ○: ' + str(a.value) + ' [Undefined behavior]')
             return w
         else:  # There's no better way to do this
             if a.value == 1:
-                return APLobj(sin(a.value),0)
+                return APLobj(sin(a.value), 0)
             elif a.value == 2:
-                return APLobj(cos(a.value),0)
+                return APLobj(cos(a.value), 0)
             elif a.value == 3:
-                return APLobj(tan(a.value),0)
+                return APLobj(tan(a.value), 0)
             elif a.value == 5:
-                return APLobj(sinh(a.value),0)
+                return APLobj(sinh(a.value), 0)
             elif a.value == 6:
-                return APLobj(cosh(a.value),0)
+                return APLobj(cosh(a.value), 0)
             elif a.value == 7:
-                return APLobj(tanh(a.value),0)
+                return APLobj(tanh(a.value), 0)
             # Inverse functions
             elif a.value == -1:
                 return APLobj(asin(a.value), 0)
@@ -90,23 +98,23 @@ def subapplydi(func, a, w):
             elif a.value == -3:
                 return APLobj(atan(a.value), 0)
             elif a.value == -5:
-                return APLobj(asinh(a.value),0)
+                return APLobj(asinh(a.value), 0)
             elif a.value == -6:
-                return APLobj(acosh(a.value),0)
+                return APLobj(acosh(a.value), 0)
             elif a.value == -7:
-                return APLobj(atanh(a.value),0)
+                return APLobj(atanh(a.value), 0)
     elif func == '=':
-        return APLobj((1 if a.value == w.value else 0),0)
+        return APLobj((1 if a.value == w.value else 0), 0)
     elif func == '≠':
         return APLobj((1 if a.value != w.value else 0), 0)
     elif func == '<':
-        return APLobj((1 if a.value < w.value else 0),0)
+        return APLobj((1 if a.value < w.value else 0), 0)
     elif func == '>':
-        return APLobj((1 if a.value > w.value else 0),0)
+        return APLobj((1 if a.value > w.value else 0), 0)
     elif func == '≥':
-        return APLobj((1 if a.value >= w.value else 0),0)
+        return APLobj((1 if a.value >= w.value else 0), 0)
     elif func == '≤':
-        return APLobj((1 if a.value <= w.value else 0),0)
+        return APLobj((1 if a.value <= w.value else 0), 0)
     elif func == '^':
         if arebool(a, w):
             return APLobj(1 if (a.value == 1 and w.value == 1) else 0)
@@ -129,26 +137,26 @@ def subapplydi(func, a, w):
 def applydi(func, a, w):
     # TODO implement all of the built in functions
     logging.info(('applydi: ' + str(func) + ' ' + str(a) + ' ' + str(w)).encode('utf-8'))
-    applied = APLobj([],0)
+    applied = APLobj([], 0)
     if func in scalarFuncs:
         arg = typeargs(a, w)
         if arg == -1:
             logging.fatal('Mixed lengths used! a = ' + str(a) + ' & w = ' + str(w))
             raise RuntimeError()  # TODO: pretty up error messages
         elif arg == 1:
-            return subapplydi(func, APLobj(a.value,0), APLobj(w.value,0))
+            return subapplydi(func, APLobj(a.value, 0), APLobj(w.value, 0))
         elif arg == 2:
             first = True if a.shape != 0 else False
             templist = a if first else w
             tempscal = a if not first else w
             for scalar in templist.value:  # Applies the function to each member individually
                 applied.value.append(subapplydi(func,
-                                                APLobj(scalar,0) if first else APLobj(tempscal.value,0),
-                                                APLobj(scalar,0) if not first else APLobj(tempscal.value,0)).value)
+                                                APLobj(scalar, 0) if first else APLobj(tempscal.value, 0),
+                                                APLobj(scalar, 0) if not first else APLobj(tempscal.value, 0)).value)
             applied = APLobj(applied.value, templist.shape)
         elif arg == 3:
             for i in range(0, len(a.value)):  # len(a.value) should be equal to len(w.value)
-                applied.value.append(subapplydi(func, APLobj(a.value[i],0), APLobj(w.value[i],0)).value)
+                applied.value.append(subapplydi(func, APLobj(a.value[i], 0), APLobj(w.value[i], 0)).value)
             applied = APLobj(applied.value, a.shape)
         return applied
 
@@ -158,23 +166,25 @@ def applydi(func, a, w):
 
 def subapplymo(func, w):
     if func == '÷':
-        return APLobj(1 / w.value,0)
+        return APLobj(1 / w.value, 0)
     elif func == '*':
-        return APLobj(exp(w.value),0)
+        return APLobj(exp(w.value), 0)
     elif func == '⍟':
-        return APLobj(log(w.value),0)
+        return APLobj(log(w.value), 0)
+    elif func == '|':
+        return APLobj(abs(w.value), 0)
     elif func == '○':
-        return APLobj(pi * w.value,0)
+        return APLobj(pi * w.value, 0)
     elif func == '⍳':
         # Ioda
         ### "COUNT" function ###
         intermed = []
         if w.shape != 0:
-            logging.fatal("A vector has been passed to ⍳ function. Undefined behavior!")
+            logging.fatal("A vector has been passed to iota function. Undefined behavior!")
             return w  # Just to do something
         else:
-            for i in range(w.value):
-                intermed.append(i)
+            for i in range(round(w.value)):
+                intermed.append(i + 1)
         return APLobj(intermed, len(intermed))
     elif func == '⍴':
         # Rho
@@ -188,9 +198,9 @@ def subapplymo(func, w):
         # Tilde
         ### "NEGATE" function ###
         if w.value == 1:
-            return APLobj(0,0)
+            return APLobj(0, 0)
         else:
-            return APLobj(1,0)
+            return APLobj(1, 0)
     elif func in '⊢⊣':
         ### "IDENTITY" functions ###
         return w
@@ -201,19 +211,18 @@ def subapplymo(func, w):
 
 def applymo(func, w):
     logging.info(('applymo: ' + str(func) + ' ' + str(w)).encode('utf-8'))
-    applied = APLobj([],0)
+    applied = APLobj([], 0)
     if func in scalarFuncs or func in '~?':
         if w.shape == 0:
             return subapplymo(func, w)
         else:
             for scalar in w.value:
-                applied.value.append(subapplymo(func, APLobj(scalar,0)).value)
+                applied.value.append(subapplymo(func, APLobj(scalar, 0)).value)
             applied = APLobj(applied.value, w.shape)
             return applied
 
     elif func in mixedFuncs:
         return subapplymo(func, w)  # Just kind of do it
-
 
 
 def apl(string, useLPN=False):  # useLPN = use Local Python Namespace (share APL functions and variables) TODO [NYI]
@@ -306,25 +315,13 @@ def apl(string, useLPN=False):  # useLPN = use Local Python Namespace (share APL
         ParsingData = applymo(opstack.pop(), ParsingData)
 
 
-                    # TODO: add extra token conditions here
+        # TODO: add extra token conditions here
 
     return ParsingData
 
 
 if __name__ == '__main__':
-    # TODO: Turn these into tests instead of dumb comments
-    # print(apl('(÷5-7)+÷15'))
-    # print(apl('2 3 4 + 1 2 1'))
-    # print(apl('1 2 3 4 × 4'))
-    # print(apl('7 + 4 2 1 5 × ⍳4'))
-    # print(apl('(1 2 3 4 × 4)<(7 + 4 2 1 5 × ⍳4)'))
-    # try:
-    #     print(apl('4 2 1 5 × 1 2 3'))
-    # except RuntimeError:
-    #     print('test passed; mixed lengths error')
-    # print(apl('(÷1 253 3) - (÷3 2 1)'))
-    # print(apl('~ 1 0 0 0 1'))
-    while(True):
+    while (True):
         e = apl(input('>>>')).value
         if isinstance(e, list):
             print(' '.join(str(x) for x in e))

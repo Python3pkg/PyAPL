@@ -28,15 +28,16 @@ class APLexer(object):
     t_NAME = r'\w+'
 
     def t_VECTORLIT(self,t):     # Matches vector literals (i.e. '234 23 11')
-        r'(\d+)([^\S\n]+\d+)+'
-        t.value = list(map(int, t.value.split(' ')))  # Turn it into a list of the numbers
+        r'[\d\.¯]+([^\S\n]+[\d\.¯]+)+'
+        t.value = list(map(float, t.value.replace('¯','-').split(' ')))  # Turn it into a list of the numbers
         t.value = APLobj(t.value, len(t.value))  # Turn it into an APLobj
         return t
 
     # A regular expression rule with some action code
     def t_NUMBERLIT(self,t):
-        r'\d+'
-        t.value = int(t.value)
+        r'[\d\.¯]+'
+        t.value = t.value.replace('¯','-')
+        t.value = float(t.value)
         t.value = APLobj(t.value, 0)
         return t
 
