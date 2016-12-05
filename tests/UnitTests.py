@@ -1,5 +1,5 @@
 import unittest
-from src import apl, APLobj
+from src.PyAPL import apl, APLobj
 
 class TestAPLPrograms(unittest.TestCase):
 

@@ -1,5 +1,5 @@
 import ply.lex as lex
-from src.__init__ import APLobj
+from src.PyAPL import APLobj
 
 class APLexer(object):
 

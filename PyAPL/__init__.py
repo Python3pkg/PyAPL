@@ -2,11 +2,11 @@ import begin
 import logging
 
 logging.basicConfig(filename='PyPL.log', level=logging.DEBUG)
-from src import APLex
+from src.PyAPL import APLex
 from collections import namedtuple
 
 from math import exp, log, pi, sin, sinh, cos, cosh, tan, tanh, \
-    asin, asinh, acos, acosh, atan, atanh, fmod
+    asin, asinh, acos, acosh, atan, atanh
 from decimal import Decimal
 
 
