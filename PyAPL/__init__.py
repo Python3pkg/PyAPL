@@ -4,7 +4,8 @@ import logging
 logging.basicConfig(filename='PyAPL.log', level=logging.FATAL)
 from PyAPL import APLex
 import numpy as np
-from collections import namedtuple
+import operator
+from functools import reduce
 
 from math import exp, log, pi, sin, sinh, cos, cosh, tan, tanh, \
     asin, asinh, acos, acosh, atan, atanh
@@ -22,9 +23,9 @@ def lcm(a, b):
     """Compute the lowest common multiple of a and b"""
     return a * b / gcd(a, b)
 
-# NOTE: If an APLobj's size is 0,
-# it's value should be an INT, not a list
-# APLobj = namedtuple('Data', 'value, shape')
+
+def totalElements(arr):
+    return reduce(operator.mul, arr.shape, 1)
 
 # Scalar functions apply their function to each of the parts of a vector
 # individually
@@ -129,6 +130,34 @@ def subapplydi(func, a, w):
             return np.array([1 if (int(a) == 1 or int(w) == 1) else 0])
         else:
             return np.array([gcd(int(a), int(w))])
+    elif func == '⍴':
+        # The total elements that will be in the new array
+        totalNewElements = reduce(operator.mul, list(a.ravel()), 1)
+        totalCurrentElements = totalElements(w)
+        if totalNewElements == totalCurrentElements:
+            # The elements are the same, just reshape the array
+            w.reshape(list(a.ravel()))
+            return w
+        elif totalNewElements > totalCurrentElements:
+            # Default APL behavior. Repeat elements until you reach the new length
+            temp = np.ndarray(int(totalNewElements))
+            tempravel = w.ravel()
+            ntimes = int(totalNewElements / totalCurrentElements)
+            for i in range(ntimes):
+                for index, item in enumerate(list(tempravel)):
+                    temp[index + (i * len(tempravel))] = item
+            # Now we have the first elements, add the remainder
+            remainder = int(totalNewElements - ntimes * len(tempravel))
+            for i in range(remainder):
+                temp[i + ntimes * len(tempravel)] = tempravel[i]
+            return temp.reshape(list(map(int, list(a))))
+        else:
+            # Default APL behavior. Cut off elements
+            temp = np.ndarray(int(totalNewElements))
+            tempravel = w.ravel()
+            for i in range(int(totalNewElements)):
+                temp[i] = tempravel[i]
+            return temp.reshape(list(map(int, list(a))))
     elif func == '⊢':
         return w
     elif func == '⊣':
@@ -157,19 +186,18 @@ def applydi(func, a, w):
                 applied.append(float(subapplydi(func,
                                                 np.array([scalar]) if first else np.array([tempscal]),
                                                 np.array([scalar]) if not first else np.array([tempscal]))))
-            applied = np.array(applied)
-            # TODO: reshape applied to be the same shape as the original
+            applied = np.array(applied).reshape(templist.shape)
         elif arg == 3:
+            shape = a.shape
             a = a.ravel()
             w = w.ravel()
             for i in range(0, a.shape[0]):  # a.shape should be equal to w.shape
                 applied.append(float(subapplydi(func, np.array([float(a.flat[i])]), np.array([float(w.flat[i])]))))
-            # TODO: reshape applied to be the same shape as the original
-            applied = np.array(applied)
+            applied = np.array(applied).reshape(shape)
         return applied
 
     elif func in mixedFuncs:
-        pass
+        return subapplydi(func, a, w)
 
 
 def subapplymo(func, w):

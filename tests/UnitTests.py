@@ -29,6 +29,21 @@ class TestAPLPrograms(unittest.TestCase):
     def test_residue(self):
         testing.assert_array_equal(apl('.1|2.5 3.64 2 ¯1.6'), np.array([0.0, 0.04, 0.0, 0.0]))
 
+    def test_reshape(self):
+        testing.assert_array_equal(apl('5 5 ⍴ ⍳7'), np.array([[1, 2, 3, 4, 5],
+                                                              [6, 7, 1, 2, 3],
+                                                              [4, 5, 6, 7, 1],
+                                                              [2, 3, 4, 5, 6],
+                                                              [7, 1, 2, 3, 4]]))
+        testing.assert_array_equal(apl('2 2 ⍴ ⍳7'), np.array([[1, 2],
+                                                              [3, 4]]))
+        testing.assert_array_equal(apl('(5 5⍴ ⍳4)>(5 5⍴ ⍳5)'),
+                                   np.array([[0, 0, 0, 0, 0],
+                                             [1, 1, 1, 0, 0],
+                                             [1, 1, 0, 0, 0],
+                                             [1, 0, 0, 0, 0],
+                                             [0, 0, 0, 0, 0]]))
+
 
 if __name__ == '__main__':
     unittest.main()
