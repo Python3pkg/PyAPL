@@ -1,10 +1,9 @@
-import begin
 import logging
+
 # Change the below line to level=logging.DEBUG for more logging info
 logging.basicConfig(filename='PyAPL.log', level=logging.FATAL)
 from PyAPL import APLex
 import numpy as np
-from collections import namedtuple
 
 from math import exp, log, pi, sin, sinh, cos, cosh, tan, tanh, \
     asin, asinh, acos, acosh, atan, atanh
@@ -23,10 +22,6 @@ def lcm(a, b):
     return a * b / gcd(a, b)
 
 
-# NOTE: If an APLobj's size is 0,
-# it's value should be an INT, not a list
-# APLobj = namedtuple('Data', 'value, shape')
-
 # Scalar functions apply their function to each of the parts of a vector
 # individually
 scalarFuncs = '+ - × ÷ | ⌈ ⌊ * ⍟ ○ ! ^ ∨ ⍲ ⍱ < ≤ = ≥ > ≠'
@@ -42,12 +37,12 @@ mixedFuncs = '⊢ ⊣ ⍴ , ⍪ ⌽ ⊖ ⍉ ↑ ↓ / ⌿ \ ⍀ ⍳ ∊ ⍋ ⍒ 
 # 2 for scalar table/vector [3 - 14 23 11] OR [41 12 1 > 4]
 # 3 for the same shape table/vector [3 2 3 > 1 4 1]
 def typeargs(a, w):
-    if a.shape != (1,1) and w.shape != (1,1):
+    if a.shape != (1, 1) and w.shape != (1, 1):
         if a.shape != w.shape:
             return -1
         else:
             return 3
-    elif a.shape != (1,1) or w.shape != (1,1):
+    elif a.shape != (1, 1) or w.shape != (1, 1):
         return 2
     else:
         return 1
@@ -148,7 +143,7 @@ def applydi(func, a, w):
         elif arg == 1:
             return subapplydi(func, a, w)
         elif arg == 2:
-            first = True if a.shape != (1,1) else False
+            first = True if a.shape != (1, 1) else False
             templist = a if first else w
             tempscal = float(a) if not first else float(w)
             for scalar in list(templist.flat):  # Applies the function to each member individually
@@ -185,7 +180,7 @@ def subapplymo(func, w):
         # Ioda
         ### "COUNT" function ###
         intermed = []
-        if w.shape != (1,1):
+        if w.shape != (1, 1):
             logging.fatal("A vector has been passed to iota function. Undefined behavior!")
             return w  # Just to do something
         else:

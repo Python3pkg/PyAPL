@@ -1,11 +1,10 @@
 import unittest
 from PyAPL import *
-from collections import namedtuple
 from numpy import testing
-APLobj = namedtuple('Data', 'value, shape')
+import numpy as np
+
 
 class TestAPLPrograms(unittest.TestCase):
-
     def test_interp(self):
         self.assertAlmostEqual(float(apl('(÷5-7)+÷15')), -0.43333, places=3)
 
