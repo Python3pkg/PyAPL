@@ -11,6 +11,7 @@ setup(
   keywords = ['interpreter', 'APL'],
   classifiers = [],
   install_requires=[
-          'ply'
+          'ply',
+          'numpy'
       ]
 )

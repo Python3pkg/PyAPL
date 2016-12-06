@@ -1,8 +1,9 @@
 import begin
 import logging
-
-logging.basicConfig(filename='PyAPL.log', level=logging.DEBUG)
+# Change the below line to level=logging.DEBUG for more logging info
+logging.basicConfig(filename='PyAPL.log', level=logging.FATAL)
 from PyAPL import APLex
+import numpy as np
 from collections import namedtuple
 
 from math import exp, log, pi, sin, sinh, cos, cosh, tan, tanh, \
@@ -24,7 +25,7 @@ def lcm(a, b):
 
 # NOTE: If an APLobj's size is 0,
 # it's value should be an INT, not a list
-APLobj = namedtuple('Data', 'value, shape')
+# APLobj = namedtuple('Data', 'value, shape')
 
 # Scalar functions apply their function to each of the parts of a vector
 # individually
@@ -41,90 +42,90 @@ mixedFuncs = '⊢ ⊣ ⍴ , ⍪ ⌽ ⊖ ⍉ ↑ ↓ / ⌿ \ ⍀ ⍳ ∊ ⍋ ⍒ 
 # 2 for scalar table/vector [3 - 14 23 11] OR [41 12 1 > 4]
 # 3 for the same shape table/vector [3 2 3 > 1 4 1]
 def typeargs(a, w):
-    if a.shape != 0 and w.shape != 0:
+    if a.shape != (1,1) and w.shape != (1,1):
         if a.shape != w.shape:
             return -1
         else:
             return 3
-    elif a.shape != 0 or w.shape != 0:
+    elif a.shape != (1,1) or w.shape != (1,1):
         return 2
     else:
         return 1
 
 
 def arebool(a, w):
-    return (a.value == 0 or a.value == 1) and (w.value == 0 or w.value == 1)
+    return (float(a) == 0 or float(a) == 1) and (float(w) == 0 or float(w) == 1)
 
 
 def subapplydi(func, a, w):
     if func == '+':
-        return APLobj(a.value + w.value, 0)
+        return np.matrix(float(a) + float(w))
     elif func == '-':
-        return APLobj(a.value - w.value, 0)
+        return np.matrix(float(a) - float(w))
     elif func == '÷':
-        return APLobj(a.value / w.value, 0)
+        return np.matrix(float(a) / float(w))
     elif func == '×':
-        return APLobj(a.value * w.value, 0)
+        return np.matrix(float(a) * float(w))
     elif func == '*':
-        return APLobj(a.value ** w.value, 0)
+        return np.matrix(float(a) ** float(w), 0)
     elif func == '⍟':
-        return APLobj(log(w.value, a.value), 0)
+        return np.matrix(log(float(w), float(a)))
     elif func == '|':
         # Why did I convert to a string then to a decimal? Because computers are dumb
         # http://stackoverflow.com/questions/14763722/python-modulo-on-floats
-        return APLobj(float(Decimal(str(w.value)) % Decimal(str(a.value))), 0)
+        return np.matrix(float(Decimal(str(float(w))) % Decimal(str(float(a)))))
     elif func == '○':
-        if a.value not in (1, 2, 3, 5, 6, 7, -1, -2, -3, -5, -6, -7):
-            logging.fatal('Invalid argument to ○: ' + str(a.value) + ' [Undefined behavior]')
+        if int(a) not in (1, 2, 3, 5, 6, 7, -1, -2, -3, -5, -6, -7):
+            logging.fatal('Invalid argument to ○: ' + str(float(a)) + ' [Undefined behavior]')
             return w
         else:  # There's no better way to do this
-            if a.value == 1:
-                return APLobj(sin(a.value), 0)
-            elif a.value == 2:
-                return APLobj(cos(a.value), 0)
-            elif a.value == 3:
-                return APLobj(tan(a.value), 0)
-            elif a.value == 5:
-                return APLobj(sinh(a.value), 0)
-            elif a.value == 6:
-                return APLobj(cosh(a.value), 0)
-            elif a.value == 7:
-                return APLobj(tanh(a.value), 0)
+            if int(a) == 1:
+                return np.matrix(sin(float(a)))
+            elif int(a) == 2:
+                return np.matrix(cos(float(a)))
+            elif int(a) == 3:
+                return np.matrix(tan(float(a)))
+            elif int(a) == 5:
+                return np.matrix(sinh(float(a)))
+            elif int(a) == 6:
+                return np.matrix(cosh(float(a)))
+            elif int(a) == 7:
+                return np.matrix(tanh(float(a)))
             # Inverse functions
-            elif a.value == -1:
-                return APLobj(asin(a.value), 0)
-            elif a.value == -2:
-                return APLobj(acos(a.value), 0)
-            elif a.value == -3:
-                return APLobj(atan(a.value), 0)
-            elif a.value == -5:
-                return APLobj(asinh(a.value), 0)
-            elif a.value == -6:
-                return APLobj(acosh(a.value), 0)
-            elif a.value == -7:
-                return APLobj(atanh(a.value), 0)
+            elif int(a) == -1:
+                return np.matrix(asin(float(a)))
+            elif int(a) == -2:
+                return np.matrix(acos(float(a)))
+            elif int(a) == -3:
+                return np.matrix(atan(float(a)))
+            elif int(a) == -5:
+                return np.matrix(asinh(float(a)))
+            elif int(a) == -6:
+                return np.matrix(acosh(float(a)))
+            elif int(a) == -7:
+                return np.matrix(atanh(float(a)))
     elif func == '=':
-        return APLobj((1 if a.value == w.value else 0), 0)
+        return np.matrix((1 if float(a) == float(w) else 0))
     elif func == '≠':
-        return APLobj((1 if a.value != w.value else 0), 0)
+        return np.matrix((1 if float(a) != float(w) else 0))
     elif func == '<':
-        return APLobj((1 if a.value < w.value else 0), 0)
+        return np.matrix((1 if float(a) < float(w) else 0))
     elif func == '>':
-        return APLobj((1 if a.value > w.value else 0), 0)
+        return np.matrix((1 if float(a) > float(w) else 0))
     elif func == '≥':
-        return APLobj((1 if a.value >= w.value else 0), 0)
+        return np.matrix((1 if float(a) >= float(w) else 0))
     elif func == '≤':
-        return APLobj((1 if a.value <= w.value else 0), 0)
+        return np.matrix((1 if float(a) <= float(w) else 0))
     elif func == '^':
         if arebool(a, w):
-            return APLobj(1 if (a.value == 1 and w.value == 1) else 0)
+            return np.matrix(1 if (int(a) == 1 and int(w) == 1) else 0)
         else:
-            return APLobj(lcm(a.value, w.value), a.size)
+            return np.matrix(lcm(int(a), int(w)))
     elif func == '∨':
         if arebool(a, w):
-            return APLobj(1 if (a.value == 1 or w.value == 1) else 0)
+            return np.matrix(1 if (int(a) == 1 or int(w) == 1) else 0)
         else:
-            return APLobj(gcd(a.value, w.value), a.size)
+            return np.matrix(gcd(int(a), int(w)))
     elif func == '⊢':
         return w
     elif func == '⊣':
@@ -137,27 +138,32 @@ def subapplydi(func, a, w):
 def applydi(func, a, w):
     # TODO implement all of the built in functions
     logging.info(('applydi: ' + str(func) + ' ' + str(a) + ' ' + str(w)).encode('utf-8'))
-    applied = APLobj([], 0)
+    # applied = np.matrix([])
+    applied = []
     if func in scalarFuncs:
         arg = typeargs(a, w)
         if arg == -1:
             logging.fatal('Mixed lengths used! a = ' + str(a) + ' & w = ' + str(w))
             raise RuntimeError()  # TODO: pretty up error messages
         elif arg == 1:
-            return subapplydi(func, APLobj(a.value, 0), APLobj(w.value, 0))
+            return subapplydi(func, a, w)
         elif arg == 2:
-            first = True if a.shape != 0 else False
+            first = True if a.shape != (1,1) else False
             templist = a if first else w
-            tempscal = a if not first else w
-            for scalar in templist.value:  # Applies the function to each member individually
-                applied.value.append(subapplydi(func,
-                                                APLobj(scalar, 0) if first else APLobj(tempscal.value, 0),
-                                                APLobj(scalar, 0) if not first else APLobj(tempscal.value, 0)).value)
-            applied = APLobj(applied.value, templist.shape)
+            tempscal = float(a) if not first else float(w)
+            for scalar in list(templist.flat):  # Applies the function to each member individually
+                applied.append(float(subapplydi(func,
+                                                np.matrix(scalar) if first else np.matrix(tempscal),
+                                                np.matrix(scalar) if not first else np.matrix(tempscal))))
+            applied = np.matrix(applied)
+            # TODO: reshape applied to be the same shape as the original
         elif arg == 3:
-            for i in range(0, len(a.value)):  # len(a.value) should be equal to len(w.value)
-                applied.value.append(subapplydi(func, APLobj(a.value[i], 0), APLobj(w.value[i], 0)).value)
-            applied = APLobj(applied.value, a.shape)
+            a = a.ravel()
+            w = w.ravel()
+            for i in range(0, a.shape[1]):  # a.shape should be equal to w.shape
+                applied.append(float(subapplydi(func, np.matrix(float(a.flat[i])), np.matrix(float(w.flat[i])))))
+            # TODO: reshape applied to be the same shape as the original
+            applied = np.matrix(applied)
         return applied
 
     elif func in mixedFuncs:
@@ -166,41 +172,37 @@ def applydi(func, a, w):
 
 def subapplymo(func, w):
     if func == '÷':
-        return APLobj(1 / w.value, 0)
+        return np.matrix(1 / float(w))
     elif func == '*':
-        return APLobj(exp(w.value), 0)
+        return np.matrix(exp(float(w)))
     elif func == '⍟':
-        return APLobj(log(w.value), 0)
+        return np.matrix(log(float(w)))
     elif func == '|':
-        return APLobj(abs(w.value), 0)
+        return np.matrix(abs(float(w)))
     elif func == '○':
-        return APLobj(pi * w.value, 0)
+        return np.matrix(pi * float(w))
     elif func == '⍳':
         # Ioda
         ### "COUNT" function ###
         intermed = []
-        if w.shape != 0:
+        if w.shape != (1,1):
             logging.fatal("A vector has been passed to iota function. Undefined behavior!")
             return w  # Just to do something
         else:
-            for i in range(round(w.value)):
+            for i in range(int(w)):
                 intermed.append(i + 1)
-        return APLobj(intermed, len(intermed))
+        return np.matrix(intermed)
     elif func == '⍴':
         # Rho
         ### "SIZE" function ###
-        if isinstance(w.shape, int):
-            return APLobj(w.shape, 0)
-        else:
-            # When it is multi-dimensional
-            return APLobj(w.shape, len(w.shape))
+        return np.matrix(w.shape)
     elif func == '~':
         # Tilde
         ### "NEGATE" function ###
-        if w.value == 1:
-            return APLobj(0, 0)
-        else:
-            return APLobj(1, 0)
+        if float(w) == 1:
+            return np.matrix(0)
+        elif float(w) == 0:
+            return np.matrix(1)
     elif func in '⊢⊣':
         ### "IDENTITY" functions ###
         return w
@@ -211,14 +213,14 @@ def subapplymo(func, w):
 
 def applymo(func, w):
     logging.info(('applymo: ' + str(func) + ' ' + str(w)).encode('utf-8'))
-    applied = APLobj([], 0)
+    applied = []
     if func in scalarFuncs or func in '~?':
         if w.shape == 0:
             return subapplymo(func, w)
         else:
-            for scalar in w.value:
-                applied.value.append(subapplymo(func, APLobj(scalar, 0)).value)
-            applied = APLobj(applied.value, w.shape)
+            for scalar in list(w.flat):
+                applied.append(float(subapplymo(func, np.matrix(scalar))))
+            applied = np.matrix(applied)
             return applied
 
     elif func in mixedFuncs:
@@ -322,8 +324,4 @@ def apl(string, useLPN=False):  # useLPN = use Local Python Namespace (share APL
 
 if __name__ == '__main__':
     while (True):
-        e = apl(input('>>>')).value
-        if isinstance(e, list):
-            print(' '.join(str(x) for x in e))
-        else:
-            print(e)
+        print(apl(input('>>>')))
