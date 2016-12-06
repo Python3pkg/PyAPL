@@ -1,5 +1,5 @@
 import ply.lex as lex
-from PyAPL import *
+from PyAPL.__init__ import apl
 import numpy as np
 from collections import namedtuple
 APLobj = namedtuple('Data', 'value, shape')
@@ -33,7 +33,7 @@ class APLexer(object):
     def t_VECTORLIT(self,t):     # Matches vector literals (i.e. '234 23 11')
         r'[\d\.¯]+([^\S\n]+[\d\.¯]+)+'
         t.value = list(map(float, t.value.replace('¯','-').split(' ')))  # Turn it into a list of the numbers
-        t.value = np.matrix(t.value)  # Turn it into an APLobj
+        t.value = np.array(t.value)  # Turn it into an array
         return t
 
     # A regular expression rule with some action code
@@ -41,7 +41,7 @@ class APLexer(object):
         r'[\d\.¯]+'
         t.value = t.value.replace('¯','-')
         t.value = float(t.value)
-        t.value = np.matrix(t.value)
+        t.value = np.array([t.value])
         return t
 
     # Define a rule so we can track line numbers
