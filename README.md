@@ -5,9 +5,14 @@ NOTE: This is in no way a complete project. So far, it works with fairly simple 
 
 A file mode is yet to be implemented.
 
+To install, use pip:
+
+	pip install PyAPL
+
 Example implementation:
 
     from PyAPL import *
-    print(apl('(÷5-7)+÷15').value)
-    print(apl('(÷1 253 3) - (÷3 2 1)').value)
-    print(apl('(1 2 3 4 × 4)<(7 + 4 2 1 5 × ⍳4)').value)
+    print(apl('(÷5-7)+÷15'))
+    print(apl('(÷1 253 3) - (÷3 2 1)'))
+    print(apl('(1 2 3 4 × 4)<(7 + 4 2 1 5 × ⍳4)'))
+    print(apl('((⍳4) × 4)<(7 + 4.2 1.4 1 5 × ⍳4)'))
