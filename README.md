@@ -6,7 +6,8 @@ NOTE: This is in no way a complete project. So far, it works with fairly simple 
 A file mode is yet to be implemented.
 
 To install, use pip:
-    pip install PyAPL
+
+	pip install PyAPL
 
 Example implementation:
 
