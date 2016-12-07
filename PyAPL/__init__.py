@@ -8,8 +8,9 @@ import operator
 from functools import reduce
 
 from math import exp, log, pi, sin, sinh, cos, cosh, tan, tanh, \
-    asin, asinh, acos, acosh, atan, atanh
+    asin, asinh, acos, acosh, atan, atanh, floor, ceil
 from decimal import Decimal
+from random import randint
 
 
 def gcd(a, b):
@@ -78,6 +79,10 @@ def subapplydi(func, a, w):
         # Why did I convert to a string then to a decimal? Because computers are dumb
         # http://stackoverflow.com/questions/14763722/python-modulo-on-floats
         return np.array([float(Decimal(str(float(w))) % Decimal(str(float(a))))])
+    elif func == '⌈':
+        return w if float(w) > float(a) else a
+    elif func == '⌊':
+        return w if float(w) < float(a) else a
     elif func == '○':
         if int(a) not in (1, 2, 3, 5, 6, 7, -1, -2, -3, -5, -6, -7):
             logging.fatal('Invalid argument to ○: ' + str(float(a)) + ' [Undefined behavior]')
@@ -158,6 +163,30 @@ def subapplydi(func, a, w):
             for i in range(int(totalNewElements)):
                 temp[i] = tempravel[i]
             return temp.reshape(list(map(int, list(a))))
+    elif func == '⌽':
+        # TODO: Check the shapes of a and w
+        flata = False
+        if a.shape[0] == 1:
+            flata = True
+        temp = np.copy(w)
+        for index, slice in enumerate(w):
+            rotby = int(
+                0 - a[0 if flata else index])  # This is negative because APL rotates in the opposite direction as np
+            temp[index] = np.roll(slice, rotby)
+        return temp
+    elif func == '⊖':
+        # TODO: Check the shapes of a and w
+        flata = False
+        if a.shape[0] == 1:
+            flata = True
+        # Transpose the array, then transpose it back after rotating
+        w = np.transpose(w)
+        temp = np.copy(w)
+        for index, slice in enumerate(w):
+            rotby = int(
+                0 - a[0 if flata else index])  # This is negative because APL rotates in the opposite direction as np
+            temp[index] = np.roll(slice, rotby)
+        return np.transpose(temp)
     elif func == '⊢':
         return w
     elif func == '⊣':
@@ -233,6 +262,19 @@ def subapplymo(func, w):
             return np.array([0])
         elif float(w) == 0:
             return np.array([1])
+    elif func == '⍉':
+        return w.transpose()
+    elif func == '⊖':
+        return np.flipud(w)
+    elif func == '⌽':
+        return np.fliplr(w)
+    elif func == '⌈':
+        return np.array([ceil(float(w))])
+    elif func == '⌊':
+        return np.array([floor(float(w))])
+    elif func == '?':
+        ### "RANDOM" function ###
+        return np.array([randint(0, int(w))])
     elif func in '⊢⊣':
         ### "IDENTITY" functions ###
         return w
