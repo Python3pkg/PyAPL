@@ -1,7 +1,7 @@
 import begin
 import logging
 # Change the below line to level=logging.DEBUG for more logging info
-logging.basicConfig(filename='PyAPL.log', level=logging.FATAL)
+logging.basicConfig(filename='src.log', level=logging.FATAL)
 from PyAPL import APLex
 import numpy as np
 import operator
