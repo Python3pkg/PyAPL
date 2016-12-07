@@ -64,5 +64,8 @@ class TestAPLPrograms(unittest.TestCase):
         testing.assert_array_equal(apl('(5 5⍴ ⍳4)>(5 5⍴ ⍳5)'), apl('⌽⌽(5 5⍴ ⍳4)>(5 5⍴ ⍳5)'))
         testing.assert_array_equal(apl('(5 5⍴ ⍳4)>(5 5⍴ ⍳5)'), apl('⊖⊖(5 5⍴ ⍳4)>(5 5⍴ ⍳5)'))
 
+    def test_adverbs(self):
+        testing.assert_array_equal(apl(r'+\5 3 ⍴ ⍳3'), apl('5 3 ⍴ 1 3 6'))
+
 if __name__ == '__main__':
     unittest.main()

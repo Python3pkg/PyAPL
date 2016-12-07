@@ -37,6 +37,9 @@ scalarFuncs = '+ - × ÷ | ⌈ ⌊ * ⍟ ○ ! ^ ∨ ⍲ ⍱ < ≤ = ≥ > ≠'
 # are actually mixed.
 mixedFuncs = '⊢ ⊣ ⍴ , ⍪ ⌽ ⊖ ⍉ ↑ ↓ / ⌿ \ ⍀ ⍳ ∊ ⍋ ⍒ ? ⌹ ⊥ ⊤ ⍕ ⍎ ⊂ ⊃ ≡ ⍷ ⌷ ~ ?'
 
+# Adverbs cannot be applied as monads, but can be applied as diads in certain situations
+adverbs = '/\\⌿⍀'
+
 
 def isscalar(w):
     return w.shape[0] == 1
@@ -299,6 +302,38 @@ def applymo(func, w):
         return subapplymo(func, w)  # Just send the entire thing to the function
 
 
+def adverb(adv, func, w):
+    # For lined arguments, transpose the array then at the end transpose it back
+    ret = np.copy(w)  # Do not modify in place
+    if adv not in '⌿⍀':
+        ret = ret.transpose()
+
+    if adv in '⌿/':
+        for index, item in enumerate(ret):
+            if index == 0:
+                if not isinstance(item, np.ndarray):
+                    rtot = np.array([item])
+                else:
+                    rtot = item
+            else:
+                if not isinstance(item, np.ndarray):
+                    rtot = applydi(func, rtot, np.array([item]))
+                else:
+                    rtot = applydi(func, rtot, item)
+        ret = rtot
+    elif adv in '⍀\\':
+        # This is where APL does the 'partial sums' of items
+        for index, item in enumerate(ret):
+            if index == 0:
+                rtot = item
+            else:
+                rtot = applydi(func, rtot, item)
+                ret[index] = rtot
+
+    if adv not in '⌿⍀':
+        ret = ret.transpose()
+    return ret
+
 def apl(string, useLPN=False):  # useLPN = use Local Python Namespace (share APL functions and variables) TODO [NYI]
     lex = APLex.APLexer()
     lex.build()
@@ -326,7 +361,7 @@ def apl(string, useLPN=False):  # useLPN = use Local Python Namespace (share APL
 
         if token.type == 'LPAREN':
 
-            if len(opstack) == 1:  # e.g.: (/3+4) - 2
+            if len(opstack) == 1:  # e.g.: (÷3+4) - 2
                 # Apply the last op as a monad
                 ParsingData = applymo(opstack.pop(), ParsingData)
 
@@ -380,6 +415,10 @@ def apl(string, useLPN=False):  # useLPN = use Local Python Namespace (share APL
                         ParsingData = applydi(opstack.pop(), namespace[token.value],
                                               ParsingData)  # TODO: Check if name is a function
                 elif token.type == 'PRIMFUNC':
+                    # Check if the thing in the opstack is an adverb
+                    if opstack[-1] in adverbs:
+                        ParsingData = adverb(opstack.pop(), token.value, ParsingData)
+                        continue
                     # Apply the first function as a monadic function then continue parsing
                     ParsingData = applymo(opstack.pop(), ParsingData)
                     opstack.append(token.value)
@@ -387,9 +426,6 @@ def apl(string, useLPN=False):  # useLPN = use Local Python Namespace (share APL
 
     if len(opstack) == 1:  # We have a leftover op
         ParsingData = applymo(opstack.pop(), ParsingData)
-
-
-        # TODO: add extra token conditions here
 
     return ParsingData
 
