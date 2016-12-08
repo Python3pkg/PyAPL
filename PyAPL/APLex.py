@@ -17,10 +17,12 @@ class APLexer(object):
         'ASSIGN',
         'VECTORLIT',
         'FUNCARG',
-        'NAME'
+        'NAME',
+        'COMMENT'
     )
 
     # Regular expression rules for simple tokens
+    t_COMMENT = r'⍝[^\n]*'
     t_LPAREN  = r'\('
     t_RPAREN  = r'\)'
     t_LBRACK  = r'\{'

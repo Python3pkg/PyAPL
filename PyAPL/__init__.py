@@ -12,6 +12,8 @@ from math import exp, log, pi, sin, sinh, cos, cosh, tan, tanh, \
 from decimal import Decimal
 from random import randint
 
+import re
+
 
 def gcd(a, b):
     """Compute the greatest common divisor of a and b"""
@@ -38,7 +40,7 @@ scalarFuncs = '+ - × ÷ | ⌈ ⌊ * ⍟ ○ ! ^ ∨ ⍲ ⍱ < ≤ = ≥ > ≠'
 mixedFuncs = '⊢ ⊣ ⍴ , ⍪ ⌽ ⊖ ⍉ ↑ ↓ / ⌿ \ ⍀ ⍳ ∊ ⍋ ⍒ ? ⌹ ⊥ ⊤ ⍕ ⍎ ⊂ ⊃ ≡ ⍷ ⌷ ~ ?'
 
 # Adverbs cannot be applied as monads, but can be applied as diads in certain situations
-adverbs = '/\\⌿⍀'
+adverbs = r'/\⌿⍀'
 
 
 def isscalar(w):
@@ -261,6 +263,7 @@ def subapplymo(func, w):
     elif func == '~':
         # Tilde
         ### "NEGATE" function ###
+        # TODO: Check value of arguments to be binary, else raise a domain error
         if float(w) == 1:
             return np.array([0])
         elif float(w) == 0:
@@ -268,8 +271,12 @@ def subapplymo(func, w):
     elif func == '⍉':
         return w.transpose()
     elif func == '⊖':
+        if len(w.shape) == 1:
+            return w[::-1]
         return np.flipud(w)
     elif func == '⌽':
+        if len(w.shape) == 1:
+            return w[::-1]
         return np.fliplr(w)
     elif func == '⌈':
         return np.array([ceil(float(w))])
@@ -334,7 +341,27 @@ def adverb(adv, func, w):
         ret = ret.transpose()
     return ret
 
-def apl(string, useLPN=False):  # useLPN = use Local Python Namespace (share APL functions and variables) TODO [NYI]
+
+aplnamespace = {}
+
+
+def apl(string):
+    if not '\n' in string and not '⋄' in string:
+        return apl_wrapped(string)
+    out = []
+    pattern = re.compile(r'^[^⍝]*')
+    for str in string.split('\n'):
+        # Take out comments
+        str = re.findall(pattern, str)[0]
+        for sub in str.split('⋄'):
+            print(sub)
+            a = apl_wrapped(sub)
+            if a is not None:
+                out.append(a)
+    return out
+
+
+def apl_wrapped(string):
     lex = APLex.APLexer()
     lex.build()
     logging.info('Parsing string... len = ' + str(len(string)))
@@ -344,14 +371,24 @@ def apl(string, useLPN=False):  # useLPN = use Local Python Namespace (share APL
     logging.info('Parsing tokens... len = ' + str(len(tokens)))
     ParsingData = None
 
-    namespace = {}
+    opgoto = '→'
+    opassign = '←'
 
     stack = []
 
     opstack = []
 
+    # Return None directly after an assignment
+    hideOutp = False
+
     for token in tokens:
+
+        hideOutp = False
+
         logging.info(('tk : ' + str(token.type) + '   ' + str(token.value)).encode('utf-8'))
+
+        if token.type == 'COMMENT':
+            continue
 
         if token.type == 'RPAREN':
             stack.append((ParsingData, opstack))  # store both this parsing data and the opstack
@@ -381,15 +418,16 @@ def apl(string, useLPN=False):  # useLPN = use Local Python Namespace (share APL
 
             if token.type == 'NAME':
 
-                if not token.value in namespace:
+                if not token.value in aplnamespace:
                     ParsingData = 0
                     logging.error('Referring to unassigned variable : ' + token.value + ' [will assign 0]')
-                    namespace[token.value] = 0
+                    aplnamespace[token.value] = 0
                 else:
-                    ParsingData = namespace[token.value]  # TODO: Check if name is a function
+                    ParsingData = aplnamespace[token.value]  # TODO: Check if name is a function
 
             elif token.type == 'NUMBERLIT' or token.type == 'VECTORLIT':
                 ParsingData = token.value
+                continue
         else:
 
             if len(opstack) == 0:
@@ -404,17 +442,30 @@ def apl(string, useLPN=False):  # useLPN = use Local Python Namespace (share APL
             elif len(opstack) == 1:
 
                 if token.type == 'NUMBERLIT' or token.type == 'VECTORLIT':
+                    if opstack[-1] == opassign:
+                        logging.fatal('Attempting to assign a value to a constant, not a symbolic name.')
+                        raise RuntimeError()  # TODO: Pretty up error messages
                     # This is the case when it is literal operation value
                     # e.g.: 5 * x
                     ParsingData = applydi(opstack.pop(), token.value, ParsingData)
                 elif token.type == 'NAME':
-                    if not token.value in namespace:
+                    if opstack[-1] == opassign:
+                        # Assign the parsing data to the value in the namespace
+                        aplnamespace[token.value] = ParsingData
+                        opstack.pop()
+                        hideOutp = True
+                        continue
+                    if not token.value in aplnamespace:
                         logging.error('Referring to unassigned variable : ' + token.value + ' [will use 0]')
                         ParsingData = applydi(opstack.pop(), 0, ParsingData)
                     else:
-                        ParsingData = applydi(opstack.pop(), namespace[token.value],
+                        ParsingData = applydi(opstack.pop(), aplnamespace[token.value],
                                               ParsingData)  # TODO: Check if name is a function
                 elif token.type == 'PRIMFUNC':
+                    if opstack[-1] == opassign:
+                        # It shouldn't be
+                        # Raise syntax error
+                        raise RuntimeError()
                     # Check if the thing in the opstack is an adverb
                     if opstack[-1] in adverbs:
                         ParsingData = adverb(opstack.pop(), token.value, ParsingData)
@@ -427,9 +478,11 @@ def apl(string, useLPN=False):  # useLPN = use Local Python Namespace (share APL
     if len(opstack) == 1:  # We have a leftover op
         ParsingData = applymo(opstack.pop(), ParsingData)
 
-    return ParsingData
+    return ParsingData if not hideOutp else None
 
 
 if __name__ == '__main__':
     while (True):
-        print(apl(input('>>>')))
+        a = apl(input('>>>'))
+        if a is not None:
+            print(a)

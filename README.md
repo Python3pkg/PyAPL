@@ -17,8 +17,8 @@ Example implementation:
 Features yet to be added (in no particular order):
 
 User-defined functions
-Variable assignment / goto's (← and →)
-Local Python namespace integration (so you can share a variable between the APL language and Python easily)
+goto's (→)
 Axis-Bracket notation
 A couple of built-in functions
 Reading from .APL files
+Boxing/full nesting (need to figure out how to implement correctly)
