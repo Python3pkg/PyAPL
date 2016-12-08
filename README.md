@@ -17,8 +17,13 @@ Example implementation:
 Features yet to be added (in no particular order):
 
 User-defined functions
+
 goto's (→)
+
 Axis-Bracket notation
+
 A couple of built-in functions
+
 Reading from .APL files
+
 Boxing/full nesting (need to figure out how to implement correctly)
