@@ -11,8 +11,9 @@ class APLexer(object):
         'NUMBERLIT',
         'LPAREN',
         'RPAREN',
-        'LBRACK',
-        'RBRACK',
+        'INDEX',
+        'LSQUR',
+        'RSQUR',
         'PRIMFUNC',
         'ASSIGN',
         'VECTORLIT',
@@ -22,11 +23,13 @@ class APLexer(object):
     )
 
     # Regular expression rules for simple tokens
+    # Matches an index thing: r'[\[;][^;]+'
     t_COMMENT = r'⍝[^\n]*'
     t_LPAREN  = r'\('
     t_RPAREN  = r'\)'
-    t_LBRACK  = r'\{'
-    t_RBRACK  = r'\}'
+    t_INDEX = r'\[[^\]]*]'  # Anything in brackets
+    t_LSQUR = r'\['
+    t_RSQUR = r'\]'
     t_PRIMFUNC = r'[\+\-×÷*⍟⌊⌈\|\!○<≤\=>≥≠∧∨⍲⍱~\?⍴⍳∊↑↓⍪⍋⍒⌽⍉⊖∪⊃⊂∩⍎⍕⌷⊣⊢≡≢¤\$\/\\⌿⍀]'
     t_ASSIGN = r'←'
     t_FUNCARG = r'[⍺⍵]'

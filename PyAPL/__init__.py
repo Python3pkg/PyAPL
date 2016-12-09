@@ -14,6 +14,8 @@ from random import randint
 
 import re
 
+# Default behavior for APL is True
+ONE_BASED_ARRAYS = True
 
 def gcd(a, b):
     """Compute the greatest common divisor of a and b"""
@@ -146,8 +148,7 @@ def subapplydi(func, a, w):
         totalCurrentElements = totalElements(w)
         if totalNewElements == totalCurrentElements:
             # The elements are the same, just reshape the array
-            w.reshape(list(a.ravel()))
-            return w
+            return w.reshape(list(map(int, list(a))))
         elif totalNewElements > totalCurrentElements:
             # Default APL behavior. Repeat elements until you reach the new length
             temp = np.ndarray(int(totalNewElements))
@@ -361,6 +362,19 @@ def apl(string):
     return out
 
 
+def bracket(data, index):
+    # TODO: Check if the indexes go outside of the data range
+    if len(index) > len(data.shape):
+        raise RuntimeError()  # rank error
+    indexes = []
+    for i in index:
+        # TODO: Domain error to be thrown here upon unsuccessful conversion
+        # Also, allow for examples where one of the dimensional arguments is a vector
+        # e.g.: a[1;1 2;1]
+        indexes.append(int(i) - 1 if ONE_BASED_ARRAYS else 0)
+    # Neat little feature of numpy. It's actually very good with indexing
+    return data[tuple(indexes)]
+
 def apl_wrapped(string):
     lex = APLex.APLexer()
     lex.build()
@@ -378,6 +392,9 @@ def apl_wrapped(string):
 
     opstack = []
 
+    outofbracketdata = None
+    # TODO: Account for scenario like: (2 3 4)[0 2]
+
     # Return None directly after an assignment
     hideOutp = False
 
@@ -389,6 +406,17 @@ def apl_wrapped(string):
 
         if token.type == 'COMMENT':
             continue
+
+        if token.type == 'INDEX':
+            results = []
+            dimens = re.findall(r'[\[;][^;]+', token.value)
+            for item in dimens:
+                if ']' in item:  # Trim the string to remove the semicolons / brackets
+                    item = item[1:-1]
+                else:
+                    item = item[1:]
+                results.append(apl_wrapped(item))
+            outofbracketdata = results
 
         if token.type == 'RPAREN':
             stack.append((ParsingData, opstack))  # store both this parsing data and the opstack
@@ -422,11 +450,19 @@ def apl_wrapped(string):
                     ParsingData = 0
                     logging.error('Referring to unassigned variable : ' + token.value + ' [will assign 0]')
                     aplnamespace[token.value] = 0
+                    continue
                 else:
                     ParsingData = aplnamespace[token.value]  # TODO: Check if name is a function
+                    if outofbracketdata is not None:
+                        ParsingData = bracket(ParsingData, outofbracketdata)
+                        outofbracketdata = None
+                    continue
 
             elif token.type == 'NUMBERLIT' or token.type == 'VECTORLIT':
                 ParsingData = token.value
+                if outofbracketdata is not None:
+                    ParsingData = bracket(ParsingData, outofbracketdata)
+                    outofbracketdata = None
                 continue
         else:
 
@@ -448,6 +484,7 @@ def apl_wrapped(string):
                     # This is the case when it is literal operation value
                     # e.g.: 5 * x
                     ParsingData = applydi(opstack.pop(), token.value, ParsingData)
+                    continue
                 elif token.type == 'NAME':
                     if opstack[-1] == opassign:
                         # Assign the parsing data to the value in the namespace
@@ -461,6 +498,10 @@ def apl_wrapped(string):
                     else:
                         ParsingData = applydi(opstack.pop(), aplnamespace[token.value],
                                               ParsingData)  # TODO: Check if name is a function
+                        if outofbracketdata is not None:
+                            ParsingData = bracket(ParsingData, outofbracketdata)
+                            outofbracketdata = None
+                        continue
                 elif token.type == 'PRIMFUNC':
                     if opstack[-1] == opassign:
                         # It shouldn't be
