@@ -202,9 +202,18 @@ def subapplydi(func, a, w):
         raise NotImplementedError()
 
 
+def applyuserfunc(func, a=None, w=None):
+    func = func[1:-1]  # Trim the brackets off the function
+    return apl(func, funcargs=[w, a] if a is not None else [w])
+
+
 def applydi(func, a, w):
     # TODO implement all of the built in functions
     logging.info(('applydi: ' + str(func) + ' ' + str(a) + ' ' + str(w)).encode('utf-8'))
+    if len(func) > 1:
+        # This is a user function
+        return applyuserfunc(func, a, w)
+
     applied = []
     if func in scalarFuncs:
         arg = typeargs(a, w)
@@ -296,6 +305,9 @@ def subapplymo(func, w):
 
 def applymo(func, w):
     logging.info(('applymo: ' + str(func) + ' ' + str(w)).encode('utf-8'))
+    if len(func) > 1:
+        # User function
+        return applyuserfunc(func, w=w)
     applied = []
     if func in scalarFuncs or func in '~?':
         if w.shape == 0:
@@ -346,9 +358,11 @@ def adverb(adv, func, w):
 aplnamespace = {}
 
 
-def apl(string):
+def apl(string, funcargs=[]):
     if not '\n' in string and not '⋄' in string:
-        return apl_wrapped(string)
+        return apl_wrapped(string, funcargs)
+    if funcargs is not None:
+        pass  # Should throw error; multi line functions and multi statement functions not supported
     out = []
     pattern = re.compile(r'^[^⍝]*')
     for str in string.split('\n'):
@@ -375,7 +389,8 @@ def bracket(data, index):
     # Neat little feature of numpy. It's actually very good with indexing
     return data[tuple(indexes)]
 
-def apl_wrapped(string):
+
+def apl_wrapped(string, funcargs=[]):
     lex = APLex.APLexer()
     lex.build()
     logging.info('Parsing string... len = ' + str(len(string)))
@@ -452,7 +467,7 @@ def apl_wrapped(string):
                     aplnamespace[token.value] = 0
                     continue
                 else:
-                    ParsingData = aplnamespace[token.value]  # TODO: Check if name is a function
+                    ParsingData = aplnamespace[token.value]
                     if outofbracketdata is not None:
                         ParsingData = bracket(ParsingData, outofbracketdata)
                         outofbracketdata = None
@@ -464,18 +479,50 @@ def apl_wrapped(string):
                     ParsingData = bracket(ParsingData, outofbracketdata)
                     outofbracketdata = None
                 continue
+            elif token.type == 'FUNLIT':
+                opstack.append(token.value)
+            elif token.type == 'ASSIGN':
+                # This should only happen when assigning functions
+                opstack.append(token.value)
+                ParsingData = opstack[0]
+            elif token.type == 'FUNCARG':
+                if token.value == '⍺':
+                    if len(funcargs) != 2:
+                        pass  # TODO: Throw error. A monadic function was used diadically
+                    ParsingData = funcargs[1]
+                    if outofbracketdata is not None:
+                        ParsingData = bracket(ParsingData, outofbracketdata)
+                        outofbracketdata = None
+                elif token.value == '⍵':
+                    if len(funcargs) == 0:
+                        raise RuntimeError()  # Shouldn't happen. No funcargs were passed
+                    ParsingData = funcargs[0]
+                    if outofbracketdata is not None:
+                        ParsingData = bracket(ParsingData, outofbracketdata)
+                        outofbracketdata = None
         else:
-
             if len(opstack) == 0:
 
                 if token.type == 'PRIMFUNC':
                     opstack.append(token.value)
                     continue
+                elif token.type == 'FUNLIT':
+                    opstack.append(token.value)
+                    continue
                 elif token.type == 'ASSIGN':
                     opstack.append(token.value)
                     continue
+                elif token.type == 'NAME':
+                    if token.value in aplnamespace:
+                        get = aplnamespace[token.value]
+                        if not isinstance(get, np.ndarray):
+                            opstack.append(get)
 
-            elif len(opstack) == 1:
+            elif len(opstack) >= 1:
+
+                if token.type == 'ASSIGN':
+                    opstack.append(token.value)
+                    continue
 
                 if token.type == 'NUMBERLIT' or token.type == 'VECTORLIT':
                     if opstack[-1] == opassign:
@@ -485,8 +532,24 @@ def apl_wrapped(string):
                     # e.g.: 5 * x
                     ParsingData = applydi(opstack.pop(), token.value, ParsingData)
                     continue
+
+                elif token.type == 'FUNCARG':
+                    if token.value == '⍺':
+                        if len(funcargs) != 2:
+                            pass  # TODO: Throw error. A monadic function was used diadically
+                        ParsingData = applydi(opstack.pop(), funcargs[1], ParsingData)
+                    elif token.value == '⍵':
+                        if len(funcargs) == 0:
+                            raise RuntimeError()  # Shouldn't happen. No funcargs were passed
+                        ParsingData = applydi(opstack.pop(), funcargs[0], ParsingData)
+
                 elif token.type == 'NAME':
                     if opstack[-1] == opassign:
+                        if len(opstack) == 2:
+                            # This is the case when we are assigning a function to a value
+                            aplnamespace[token.value] = opstack[0]
+                            opstack = [opstack[1]]
+                            continue
                         # Assign the parsing data to the value in the namespace
                         aplnamespace[token.value] = ParsingData
                         opstack.pop()
@@ -496,8 +559,14 @@ def apl_wrapped(string):
                         logging.error('Referring to unassigned variable : ' + token.value + ' [will use 0]')
                         ParsingData = applydi(opstack.pop(), 0, ParsingData)
                     else:
-                        ParsingData = applydi(opstack.pop(), aplnamespace[token.value],
-                                              ParsingData)  # TODO: Check if name is a function
+                        get = aplnamespace[token.value]
+                        if isinstance(get, np.ndarray):
+                            ParsingData = applydi(opstack.pop(), get, ParsingData)
+                        else:
+                            # The name must be a function
+                            # Apply the previous function as a monad
+                            ParsingData = applymo(opstack.pop(), ParsingData)
+                            opstack.append(token.value)
                         if outofbracketdata is not None:
                             ParsingData = bracket(ParsingData, outofbracketdata)
                             outofbracketdata = None
@@ -517,7 +586,10 @@ def apl_wrapped(string):
                     continue
 
     if len(opstack) == 1:  # We have a leftover op
-        ParsingData = applymo(opstack.pop(), ParsingData)
+        if opstack[0] != '←':
+            ParsingData = applymo(opstack.pop(), ParsingData)
+        else:
+            hideOutp = True
 
     return ParsingData if not hideOutp else None
 

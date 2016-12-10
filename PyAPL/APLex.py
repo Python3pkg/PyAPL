@@ -19,7 +19,8 @@ class APLexer(object):
         'VECTORLIT',
         'FUNCARG',
         'NAME',
-        'COMMENT'
+        'COMMENT',
+        'FUNLIT'
     )
 
     # Regular expression rules for simple tokens
@@ -28,6 +29,7 @@ class APLexer(object):
     t_LPAREN  = r'\('
     t_RPAREN  = r'\)'
     t_INDEX = r'\[[^\]]*]'  # Anything in brackets
+    t_FUNLIT = r'\{[^\}]*\}'  # Things in curly brackets are functions
     t_LSQUR = r'\['
     t_RSQUR = r'\]'
     t_PRIMFUNC = r'[\+\-×÷*⍟⌊⌈\|\!○<≤\=>≥≠∧∨⍲⍱~\?⍴⍳∊↑↓⍪⍋⍒⌽⍉⊖∪⊃⊂∩⍎⍕⌷⊣⊢≡≢¤\$\/\\⌿⍀]'
