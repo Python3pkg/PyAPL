@@ -359,20 +359,36 @@ aplnamespace = {}
 
 
 def apl(string, funcargs=[]):
-    if not '\n' in string and not '⋄' in string:
-        return apl_wrapped(string, funcargs)
-    if funcargs is not None:
-        pass  # Should throw error; multi line functions and multi statement functions not supported
+    if not '\n' in string:
+        lex = APLex.APLexer()
+        lex.build()
+        # logging.info('Parsing string... len = ' + str(len(string)))
+        tokens = lex.inp(string)
+        # APL is a right to left language, so we will reverse the token order
+        tokens = tokens[::-1]
+        # logging.info('Parsing tokens... len = ' + str(len(tokens)))
+        if funcargs is []:
+            a = apl_wrapped(tokens)
+        else:
+            a = apl_wrapped(tokens, funcargs)
+        return a
     out = []
-    pattern = re.compile(r'^[^⍝]*')
     for str in string.split('\n'):
-        # Take out comments
-        str = re.findall(pattern, str)[0]
-        for sub in str.split('⋄'):
-            print(sub)
-            a = apl_wrapped(sub)
-            if a is not None:
-                out.append(a)
+        lex = APLex.APLexer()
+        lex.build()
+        # logging.info('Parsing string... len = ' + str(len(string)))
+        tokens = lex.inp(str)
+        # APL is a right to left language, so we will reverse the token order
+        tokens = tokens[::-1]
+        # logging.info('Parsing tokens... len = ' + str(len(tokens)))
+        if funcargs is []:
+            a = apl_wrapped(tokens)
+        else:
+            a = apl_wrapped(tokens, funcargs)
+        if a is not None:
+            out.append(a)
+    if len(out) == 1:
+        return out[0]
     return out
 
 
@@ -390,14 +406,8 @@ def bracket(data, index):
     return data[tuple(indexes)]
 
 
-def apl_wrapped(string, funcargs=[]):
-    lex = APLex.APLexer()
-    lex.build()
-    logging.info('Parsing string... len = ' + str(len(string)))
-    tokens = lex.inp(string)
-    # APL is a right to left language, so we will reverse the token order
-    tokens = tokens[::-1]
-    logging.info('Parsing tokens... len = ' + str(len(tokens)))
+def apl_wrapped(tokens, funcargs=[]):
+
     ParsingData = None
 
     opgoto = '→'
@@ -420,6 +430,14 @@ def apl_wrapped(string, funcargs=[]):
         logging.info(('tk : ' + str(token.type) + '   ' + str(token.value)).encode('utf-8'))
 
         if token.type == 'COMMENT':
+            continue
+
+        if token.type == 'STATSEP':
+            if len(opstack) == 1:  # We have a leftover op
+                if opstack[0] != '←':
+                    ParsingData = applymo(opstack.pop(), ParsingData)
+                else:
+                    hideOutp = True
             continue
 
         if token.type == 'INDEX':
@@ -536,7 +554,7 @@ def apl_wrapped(string, funcargs=[]):
                 elif token.type == 'FUNCARG':
                     if token.value == '⍺':
                         if len(funcargs) != 2:
-                            pass  # TODO: Throw error. A monadic function was used diadically
+                            print('UHOH')  # TODO: Throw error. A monadic function was used diadically
                         ParsingData = applydi(opstack.pop(), funcargs[1], ParsingData)
                     elif token.value == '⍵':
                         if len(funcargs) == 0:

@@ -20,7 +20,8 @@ class APLexer(object):
         'FUNCARG',
         'NAME',
         'COMMENT',
-        'FUNLIT'
+        'FUNLIT',
+        'STATSEP'
     )
 
     # Regular expression rules for simple tokens
@@ -29,13 +30,14 @@ class APLexer(object):
     t_LPAREN  = r'\('
     t_RPAREN  = r'\)'
     t_INDEX = r'\[[^\]]*]'  # Anything in brackets
-    t_FUNLIT = r'\{[^\}]*\}'  # Things in curly brackets are functions
+    t_FUNLIT = r'\{[^\}]*⋄*\}'  # Things in curly brackets are functions
     t_LSQUR = r'\['
     t_RSQUR = r'\]'
     t_PRIMFUNC = r'[\+\-×÷*⍟⌊⌈\|\!○<≤\=>≥≠∧∨⍲⍱~\?⍴⍳∊↑↓⍪⍋⍒⌽⍉⊖∪⊃⊂∩⍎⍕⌷⊣⊢≡≢¤\$\/\\⌿⍀]'
     t_ASSIGN = r'←'
     t_FUNCARG = r'[⍺⍵]'
     t_NAME = r'\w+'
+    t_STATSEP = r'⋄(?![^{]*})'  # Matches ⋄ characters not inside of brackets
 
     def t_VECTORLIT(self,t):     # Matches vector literals (i.e. '234 23 11')
         r'[\d\.¯]+([^\S\n]+[\d\.¯]+)+'

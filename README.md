@@ -31,3 +31,6 @@ Boxing/full nesting (need to figure out how to implement correctly)
 More syntax error catchers. This implementation might not be the best for someone very new to APL, since it won't catch some mistakes easily yet.
 
 In general, the error system is very lacking. It is high priority to get a system in place.
+
+
+NOTE: One gotcha of this interpreter is that it reads multi-statements right to left, like they probably should be. An example is found in the function unittest.
