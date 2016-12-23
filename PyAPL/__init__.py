@@ -165,8 +165,6 @@ def subapplymo(func, w):
     elif func == '⍴':
         return SHAPE(w)
     elif func == '~':
-        # Tilde
-        ### "NEGATE" function ###
         if not arebool(w, w):
             raise TypeError()
         return BOOLNOT(w)
@@ -312,7 +310,7 @@ def apl_wrapped(tokens, funcargs=[]):
 
         hideOutp = False
 
-        logging.info(('tk : ' + str(token.type) + '   ' + str(token.value)).encode('utf-8'))
+        # logging.info(('tk : ' + str(token.type) + '   ' + str(token.value)).encode('utf-8'))
 
         if token.type == 'COMMENT':
             continue
@@ -333,7 +331,7 @@ def apl_wrapped(tokens, funcargs=[]):
                     item = item[1:-1]
                 else:
                     item = item[1:]
-                results.append(apl_wrapped(item))
+                results.append(apl(item))
             outofbracketdata = results
 
         if token.type == 'RPAREN':
