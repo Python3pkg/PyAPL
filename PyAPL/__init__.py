@@ -1,8 +1,10 @@
 import begin
 import logging
+
 # Change the below line to level=logging.DEBUG for more logging info
 logging.basicConfig(filename='src.log', level=logging.FATAL)
 from PyAPL import APLex
+from PyAPL.APLnativefuncs import *
 import numpy as np
 import operator
 from functools import reduce
@@ -16,6 +18,7 @@ import re
 
 # Default behavior for APL is True
 ONE_BASED_ARRAYS = True
+
 
 def gcd(a, b):
     """Compute the greatest common divisor of a and b"""
@@ -32,6 +35,7 @@ def lcm(a, b):
 def totalElements(arr):
     return reduce(operator.mul, arr.shape, 1)
 
+
 # Scalar functions apply their function to each of the parts of a vector
 # individually
 scalarFuncs = '+ - × ÷ | ⌈ ⌊ * ⍟ ○ ! ^ ∨ ⍲ ⍱ < ≤ = ≥ > ≠'
@@ -45,154 +49,55 @@ mixedFuncs = '⊢ ⊣ ⍴ , ⍪ ⌽ ⊖ ⍉ ↑ ↓ / ⌿ \ ⍀ ⍳ ∊ ⍋ ⍒ 
 adverbs = r'/\⌿⍀'
 
 
-def isscalar(w):
-    return w.shape[0] == 1
-
-
-# Returns: False for unmatched types [2 3 4 = 3 4]
-# 1 for scalar scalar [3 + 43]
-# 2 for scalar table/vector [3 - 14 23 11] OR [41 12 1 > 4]
-# 3 for the same shape table/vector [3 2 3 > 1 4 1]
-def typeargs(a, w):
-    if not isscalar(a) and not isscalar(w):
-        if a.shape != w.shape:
-            return -1
-        else:
-            return 3
-    elif isscalar(a) and isscalar(w):
-        return 1
-    else:
-        return 2
-
-
-def arebool(a, w):
-    return (float(a) == 0 or float(a) == 1) and (float(w) == 0 or float(w) == 1)
-
-
 def subapplydi(func, a, w):
     if func == '+':
-        return np.array([float(a) + float(w)])
+        return PLUS(a, w)
     elif func == '-':
-        return np.array([float(a) - float(w)])
+        return MINUS(a, w)
     elif func == '÷':
-        return np.array([float(a) / float(w)])
+        return DIVIDE(a, w)
     elif func == '×':
-        return np.array([float(a) * float(w)])
+        return MULTIPLY(a, w)
     elif func == '*':
-        return np.array([float(a) ** float(w)])
+        return POWER(a, w)
     elif func == '⍟':
-        return np.array([log(float(w), float(a))])
+        return LOGBASE(a, w)
     elif func == '|':
-        # Why did I convert to a string then to a decimal? Because computers are dumb
-        # http://stackoverflow.com/questions/14763722/python-modulo-on-floats
-        return np.array([float(Decimal(str(float(w))) % Decimal(str(float(a))))])
+        return RESIDUE(a, w)
     elif func == '⌈':
-        return w if float(w) > float(a) else a
+        return CEILING(a, w)
     elif func == '⌊':
-        return w if float(w) < float(a) else a
+        return FLOOR(a, w)
     elif func == '○':
-        if int(a) not in (1, 2, 3, 5, 6, 7, -1, -2, -3, -5, -6, -7):
-            logging.fatal('Invalid argument to ○: ' + str(float(a)) + ' [Undefined behavior]')
-            return w
-        else:  # There's no better way to do this
-            if int(a) == 1:
-                return np.array([sin(float(a))])
-            elif int(a) == 2:
-                return np.array([cos(float(a))])
-            elif int(a) == 3:
-                return np.array([tan(float(a))])
-            elif int(a) == 5:
-                return np.array([sinh(float(a))])
-            elif int(a) == 6:
-                return np.array([cosh(float(a))])
-            elif int(a) == 7:
-                return np.array([tanh(float(a))])
-            # Inverse functions
-            elif int(a) == -1:
-                return np.array([asin(float(a))])
-            elif int(a) == -2:
-                return np.array([acos(float(a))])
-            elif int(a) == -3:
-                return np.array([atan(float(a))])
-            elif int(a) == -5:
-                return np.array([asinh(float(a))])
-            elif int(a) == -6:
-                return np.array([acosh(float(a))])
-            elif int(a) == -7:
-                return np.array([atanh(float(a))])
+        return CIRCLE(a, w)
     elif func == '=':
-        return np.array([(1 if float(a) == float(w) else 0)])
+        return COMPEQ(a, w)
     elif func == '≠':
-        return np.array([(1 if float(a) != float(w) else 0)])
+        return COMPNEQ(a, w)
     elif func == '<':
-        return np.array([(1 if float(a) < float(w) else 0)])
+        return COMPLES(a, w)
     elif func == '>':
-        return np.array([(1 if float(a) > float(w) else 0)])
+        return COMPGRE(a, w)
     elif func == '≥':
-        return np.array([(1 if float(a) >= float(w) else 0)])
+        return COMPGREQ(a, w)
     elif func == '≤':
-        return np.array([(1 if float(a) <= float(w) else 0)])
+        return COMPLESQ(a, w)
     elif func == '^':
         if arebool(a, w):
-            return np.array([1 if (int(a) == 1 and int(w) == 1) else 0])
+            return BOOLAND(a, w)
         else:
-            return np.array([lcm(int(a), int(w))])
+            return LEASTCM(a, w)
     elif func == '∨':
         if arebool(a, w):
-            return np.array([1 if (int(a) == 1 or int(w) == 1) else 0])
+            return BOOLOR(a, w)
         else:
-            return np.array([gcd(int(a), int(w))])
+            return GREATESTCD(a, w)
     elif func == '⍴':
-        # The total elements that will be in the new array
-        totalNewElements = reduce(operator.mul, list(a.ravel()), 1)
-        totalCurrentElements = totalElements(w)
-        if totalNewElements == totalCurrentElements:
-            # The elements are the same, just reshape the array
-            return w.reshape(list(map(int, list(a))))
-        elif totalNewElements > totalCurrentElements:
-            # Default APL behavior. Repeat elements until you reach the new length
-            temp = np.ndarray(int(totalNewElements))
-            tempravel = w.ravel()
-            ntimes = int(totalNewElements / totalCurrentElements)
-            for i in range(ntimes):
-                for index, item in enumerate(list(tempravel)):
-                    temp[index + (i * len(tempravel))] = item
-            # Now we have the first elements, add the remainder
-            remainder = int(totalNewElements - ntimes * len(tempravel))
-            for i in range(remainder):
-                temp[i + ntimes * len(tempravel)] = tempravel[i]
-            return temp.reshape(list(map(int, list(a))))
-        else:
-            # Default APL behavior. Cut off elements
-            temp = np.ndarray(int(totalNewElements))
-            tempravel = w.ravel()
-            for i in range(int(totalNewElements)):
-                temp[i] = tempravel[i]
-            return temp.reshape(list(map(int, list(a))))
+        return RESHAPE(a, w)
     elif func == '⌽':
-        # TODO: Check the shapes of a and w
-        flata = False
-        if a.shape[0] == 1:
-            flata = True
-        temp = np.copy(w)
-        for index, slice in enumerate(w):
-            rotby = int(
-                0 - a[0 if flata else index])  # This is negative because APL rotates in the opposite direction as np
-            temp[index] = np.roll(slice, rotby)
-        return temp
+        return HORROT(a, w)
     elif func == '⊖':
-        # TODO: Check the shapes of a and w
-        flata = False
-        if a.shape[0] == 1:
-            flata = True
-        # Transpose the array, then transpose it back after rotating
-        w = np.transpose(w)
-        temp = np.copy(w)
-        for index, slice in enumerate(w):
-            rotby = int(
-                0 - a[0 if flata else index])  # This is negative because APL rotates in the opposite direction as np
-            temp[index] = np.roll(slice, rotby)
-        return np.transpose(temp)
+        return VERTROT(a, w)
     elif func == '⊢':
         return w
     elif func == '⊣':
@@ -246,61 +151,42 @@ def applydi(func, a, w):
 
 def subapplymo(func, w):
     if func == '÷':
-        return np.array([1 / float(w)])
+        return INVERT(w)
     elif func == '*':
-        return np.array([exp(float(w))])
+        return EEXP(w)
     elif func == '⍟':
-        return np.array([log(float(w))])
+        return NATLOG(w)
     elif func == '|':
-        return np.array([abs(float(w))])
+        return ABS(w)
     elif func == '○':
-        return np.array([pi * float(w)])
+        return PITIMES(w)
     elif func == '⍳':
-        # Ioda
-        ### "COUNT" function ###
-        intermed = []
-        if len(w.shape) != 1:
-            logging.fatal("A vector has been passed to iota function. Undefined behavior!")
-            return w  # Just to do something
-        else:
-            for i in range(int(w)):
-                intermed.append(i + 1)
-        return np.array(intermed)
+        return COUNT(w)
     elif func == '⍴':
-        # Rho
-        ### "SIZE" function ###
-        return np.array([w.shape])
+        return SHAPE(w)
     elif func == '~':
         # Tilde
         ### "NEGATE" function ###
-        # TODO: Check value of arguments to be binary, else raise a domain error
-        if float(w) == 1:
-            return np.array([0])
-        elif float(w) == 0:
-            return np.array([1])
+        if not arebool(w, w):
+            raise TypeError()
+        return BOOLNOT(w)
     elif func == '⍉':
-        return w.transpose()
+        return TRANSPOSE(w)
     elif func == '⊖':
-        if len(w.shape) == 1:
-            return w[::-1]
-        return np.flipud(w)
+        return VERTFLIP(w)
     elif func == '⌽':
-        if len(w.shape) == 1:
-            return w[::-1]
-        return np.fliplr(w)
+        return HORFLIP(w)
     elif func == '⌈':
-        return np.array([ceil(float(w))])
+        return ROUNDUP(w)
     elif func == '⌊':
-        return np.array([floor(float(w))])
+        return ROUNDDOWN(w)
     elif func == '?':
-        ### "RANDOM" function ###
-        return np.array([randint(0, int(w))])
+        return RANDOM(w)
     elif func in '⊢⊣':
-        ### "IDENTITY" functions ###
         return w
     else:
         logging.error('Function not yet supported: ' + func)
-        raise NotImplementedError()  # TODO: continue implementing primitive functions
+        raise NotImplementedError()
 
 
 def applymo(func, w):
@@ -407,7 +293,6 @@ def bracket(data, index):
 
 
 def apl_wrapped(tokens, funcargs=[]):
-
     ParsingData = None
 
     opgoto = '→'
