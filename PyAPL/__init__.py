@@ -2,7 +2,7 @@ import begin
 import logging
 
 # Change the below line to level=logging.DEBUG for more logging info
-logging.basicConfig(filename='src.log', level=logging.FATAL)
+logging.basicConfig(filename='src.log', level=logging.WARNING)
 from PyAPL import APLex
 from PyAPL.APLnativefuncs import *
 import numpy as np
@@ -118,7 +118,6 @@ def applydi(func, a, w):
     if len(func) > 1:
         # This is a user function
         return applyuserfunc(func, a, w)
-
     applied = []
     if func in scalarFuncs:
         arg = typeargs(a, w)
@@ -389,7 +388,8 @@ def apl_wrapped(tokens, funcargs=[]):
             elif token.type == 'FUNCARG':
                 if token.value == '⍺':
                     if len(funcargs) != 2:
-                        pass  # TODO: Throw error. A monadic function was used diadically
+                        logging.fatal('Attempted to use a diadic function monadically!')
+                        raise ValueError('Attempted to use a diadic function monadically')
                     ParsingData = funcargs[1]
                     if outofbracketdata is not None:
                         ParsingData = bracket(ParsingData, outofbracketdata)
@@ -437,8 +437,10 @@ def apl_wrapped(tokens, funcargs=[]):
                 elif token.type == 'FUNCARG':
                     if token.value == '⍺':
                         if len(funcargs) != 2:
-                            print('UHOH')  # TODO: Throw error. A monadic function was used diadically
-                        ParsingData = applydi(opstack.pop(), funcargs[1], ParsingData)
+                            logging.fatal('Attempted to use a diadic function monadically!')
+                            raise ValueError('Attempted to use a diadic function monadically')
+                        else:
+                            ParsingData = applydi(opstack.pop(), funcargs[1], ParsingData)
                     elif token.value == '⍵':
                         if len(funcargs) == 0:
                             raise RuntimeError()  # Shouldn't happen. No funcargs were passed

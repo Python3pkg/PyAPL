@@ -1,3 +1,7 @@
+#
+#  A lexer built to tokenize the APL language using PLY
+#
+
 import ply.lex as lex
 from PyAPL import *
 import numpy as np

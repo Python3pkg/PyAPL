@@ -1,4 +1,4 @@
-
+#  All the native APL functions implemented with numpy
 #  NOTE: One implementation that might need to be done is
 #  adding a function wrapper for checking types and throwing
 #  type errors
