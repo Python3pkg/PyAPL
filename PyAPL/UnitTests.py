@@ -68,7 +68,6 @@ class TestAPLPrograms(unittest.TestCase):
         testing.assert_array_equal(apl(r'+\5 3 ⍴ ⍳3'), apl('5 3 ⍴ 1 3 6'))
 
     def test_functions(self):
-        print(apl('func ← {⍺ + B ⋄ B←⍵+22}  \n10 func 20'))
         testing.assert_array_equal(apl('func ← {⍺ + B ⋄ B←⍵+22}  \n10 func 20'), np.array([52]))
 
 if __name__ == '__main__':

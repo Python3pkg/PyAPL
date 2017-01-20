@@ -358,3 +358,23 @@ def DEPTH(w, recursivecall=False):
     # def FIRST(w):
     #     '''Return the first major item of ⍵'''
     #     return np.array()
+
+
+def DECODE(a, w):
+    '''Return an evaluated polynomial'''
+    if a.shape != (1,) or len(w.shape) != 1:
+        raise ValueError('Decode can only be called with (scalar)⊥(vector)')
+    ret = 0
+    size = w.shape[0]
+    for index, number in enumerate(w):
+        ret += float(number) * (float(a) ** (size - index - 1))
+    return ret
+
+    # def ENCODE(a, w):
+    #     '''Return the encoded representation of ⍺'''
+    #     if len(a.shape) != 1 or len(w.shape) != 1:
+    #         raise ValueError('Encode only works with (vector/scalar)⊤(vector)')
+    #     ret = np.ndarray((w.shape[0],a.shape[0]))
+    #     for index, number in enumerate(a):
+    #         row = np.ndarray(w.shape[0])
+    #         # TODO: Finish this function

@@ -19,6 +19,8 @@ import re
 # Default behavior for APL is True
 ONE_BASED_ARRAYS = True
 
+# Printing debug info
+DEBUG_MODE = False
 
 def gcd(a, b):
     """Compute the greatest common divisor of a and b"""
@@ -92,6 +94,8 @@ def subapplydi(func, a, w):
             return BOOLOR(a, w)
         else:
             return GREATESTCD(a, w)
+    elif func == '⊥':
+        return DECODE(a, w)
     elif func == '⍴':
         return RESHAPE(a, w)
     elif func == '⌽':
@@ -114,7 +118,8 @@ def applyuserfunc(func, a=None, w=None):
 
 def applydi(func, a, w):
     # TODO implement all of the built in functions
-    logging.info(('applydi: ' + str(func) + ' ' + str(a) + ' ' + str(w)).encode('utf-8'))
+    if DEBUG_MODE:
+        print('applydi: ' + str(func) + ' ' + str(a) + ' ' + str(w))
     if len(func) > 1:
         # This is a user function
         return applyuserfunc(func, a, w)
@@ -187,7 +192,8 @@ def subapplymo(func, w):
 
 
 def applymo(func, w):
-    logging.info(('applymo: ' + str(func) + ' ' + str(w)).encode('utf-8'))
+    if DEBUG_MODE:
+        print('applymo: ' + str(func) + ' ' + str(w))
     if len(func) > 1:
         # User function
         return applyuserfunc(func, w=w)
@@ -306,6 +312,12 @@ def apl_wrapped(tokens, funcargs=[]):
     hideOutp = False
 
     for token in tokens:
+        if DEBUG_MODE:
+            print("\n")
+            print("⍝⍝ NS ⍝⍝   " + str(aplnamespace))
+            print("⍝⍝ OP ⍝⍝   " + str(opstack))
+            print("⍝⍝ PD ⍝⍝   " + str(ParsingData))
+            print("⍝⍝ TK ⍝⍝   " + str(token))
 
         hideOutp = False
 
@@ -317,10 +329,20 @@ def apl_wrapped(tokens, funcargs=[]):
         if token.type == 'STATSEP':
             if len(opstack) == 1:  # We have a leftover op
                 if opstack[0] != '←':
-                    ParsingData = applymo(opstack.pop(), ParsingData)
+                    ParsingData = applymo(opstack.pop(), ParsingData)  # This should be unnecessary
                 else:
-                    hideOutp = True
+                    raise SyntaxError('Syntax Error!')
+            # Clear all of the data between statements
+            stack = []
+
+            opstack = []
+
+            outofbracketdata = None
+
+            hideOutp = False
+            ParsingData = None
             continue
+
 
         if token.type == 'INDEX':
             results = []
@@ -443,7 +465,8 @@ def apl_wrapped(tokens, funcargs=[]):
                             ParsingData = applydi(opstack.pop(), funcargs[1], ParsingData)
                     elif token.value == '⍵':
                         if len(funcargs) == 0:
-                            raise RuntimeError()  # Shouldn't happen. No funcargs were passed
+                            logging.fatal('Function arguments used outside of literal context!')
+                            raise SyntaxError('Function arguments used outside of literal context!')
                         ParsingData = applydi(opstack.pop(), funcargs[0], ParsingData)
 
                 elif token.type == 'NAME':
@@ -454,12 +477,15 @@ def apl_wrapped(tokens, funcargs=[]):
                             opstack = [opstack[1]]
                             continue
                         # Assign the parsing data to the value in the namespace
+                        if DEBUG_MODE:
+                            print("⍝⍝ AS ⍝⍝   " + str(token.value) + " := " + str(ParsingData))
                         aplnamespace[token.value] = ParsingData
                         opstack.pop()
                         hideOutp = True
                         continue
                     if not token.value in aplnamespace:
-                        logging.error('Referring to unassigned variable : ' + token.value + ' [will use 0]')
+                        if DEBUG_MODE:
+                            print('Referring to unassigned variable : ' + token.value + ' [will use 0]')
                         ParsingData = applydi(opstack.pop(), 0, ParsingData)
                     else:
                         get = aplnamespace[token.value]
@@ -478,7 +504,7 @@ def apl_wrapped(tokens, funcargs=[]):
                     if opstack[-1] == opassign:
                         # It shouldn't be
                         # Raise syntax error
-                        raise RuntimeError()
+                        raise SyntaxError("Syntax Error!")
                     # Check if the thing in the opstack is an adverb
                     if opstack[-1] in adverbs:
                         ParsingData = adverb(opstack.pop(), token.value, ParsingData)
