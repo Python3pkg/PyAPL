@@ -4,8 +4,8 @@ from collections import namedtuple
 from numpy import testing
 import numpy as np
 
-class TestAPLPrograms(unittest.TestCase):
 
+class TestAPLPrograms(unittest.TestCase):
     def test_interp(self):
         self.assertAlmostEqual(float(apl('(÷5-7)+÷15')), -0.43333, places=3)
 
@@ -69,6 +69,12 @@ class TestAPLPrograms(unittest.TestCase):
 
     def test_functions(self):
         testing.assert_array_equal(apl('func ← {⍺ + B ⋄ B←⍵+22}  \n10 func 20'), np.array([52]))
+
+    def test_digit_function(self):
+        # This is a complicated example that attempts to solve a logic problem involving
+        # multiplying a numbers digits together.
+        testing.assert_array_equal(apl('S ← {×/(10⊤⍵)} \n (10≤S¨S¨S¨S¨(⍳999))⍳1'), np.array([679]))
+
 
 if __name__ == '__main__':
     unittest.main()

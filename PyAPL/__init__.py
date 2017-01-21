@@ -22,6 +22,7 @@ ONE_BASED_ARRAYS = True
 # Printing debug info
 DEBUG_MODE = False
 
+
 def gcd(a, b):
     """Compute the greatest common divisor of a and b"""
     while b > 0:
@@ -48,7 +49,7 @@ scalarFuncs = '+ - × ÷ | ⌈ ⌊ * ⍟ ○ ! ^ ∨ ⍲ ⍱ < ≤ = ≥ > ≠'
 mixedFuncs = '⊢ ⊣ ⍴ , ⍪ ⌽ ⊖ ⍉ ↑ ↓ / ⌿ \ ⍀ ⍳ ∊ ⍋ ⍒ ? ⌹ ⊥ ⊤ ⍕ ⍎ ⊂ ⊃ ≡ ⍷ ⌷ ~ ?'
 
 # Adverbs cannot be applied as monads, but can be applied as diads in certain situations
-adverbs = r'/\⌿⍀'
+adverbs = r'/\⌿⍀¨'
 
 
 def subapplydi(func, a, w):
@@ -96,12 +97,16 @@ def subapplydi(func, a, w):
             return GREATESTCD(a, w)
     elif func == '⊥':
         return DECODE(a, w)
+    elif func == '⊤':
+        return ENCODE(a, w)
     elif func == '⍴':
         return RESHAPE(a, w)
     elif func == '⌽':
         return HORROT(a, w)
     elif func == '⊖':
         return VERTROT(a, w)
+    elif func == '⍳':
+        return FIND(a, w)
     elif func == '⊢':
         return w
     elif func == '⊣':
@@ -211,10 +216,12 @@ def applymo(func, w):
         return subapplymo(func, w)  # Just send the entire thing to the function
 
 
-def adverb(adv, func, w):
+def adverb(adv, func, w, userfunc=None):
+    if DEBUG_MODE:
+        print('adverb: ' + str(adv) + ' ' + str(func) + ' ' + str(w))
     # For lined arguments, transpose the array then at the end transpose it back
     ret = np.copy(w)  # Do not modify in place
-    if adv not in '⌿⍀':
+    if adv in '\\/':
         ret = ret.transpose()
 
     if adv in '⌿/':
@@ -239,8 +246,18 @@ def adverb(adv, func, w):
                 rtot = applydi(func, rtot, item)
                 ret[index] = rtot
 
-    if adv not in '⌿⍀':
+    if adv in '/\\':
         ret = ret.transpose()
+
+    if adv == '¨':
+        # This is the APL 'each' operator
+        # It applies a monadic function to each value of a vector
+        # TODO: Test with dimensions
+        if userfunc is None:
+            return np.array([list(applymo(func, np.array([b])))[0] for b in ret])
+        else:
+            return np.array([list(applyuserfunc(userfunc, w=np.array([b])))[0] for b in ret])
+
     return ret
 
 
@@ -342,7 +359,6 @@ def apl_wrapped(tokens, funcargs=[]):
             hideOutp = False
             ParsingData = None
             continue
-
 
         if token.type == 'INDEX':
             results = []
@@ -493,7 +509,10 @@ def apl_wrapped(tokens, funcargs=[]):
                             ParsingData = applydi(opstack.pop(), get, ParsingData)
                         else:
                             # The name must be a function
-                            # Apply the previous function as a monad
+                            # Apply the previous function as a monad ONLY if there's no adverb
+                            if opstack[-1] in adverbs:
+                                ParsingData = adverb(opstack.pop(), token.value, ParsingData, userfunc=get)
+                                continue
                             ParsingData = applymo(opstack.pop(), ParsingData)
                             opstack.append(token.value)
                         if outofbracketdata is not None:

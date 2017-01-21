@@ -370,11 +370,69 @@ def DECODE(a, w):
         ret += float(number) * (float(a) ** (size - index - 1))
     return ret
 
-    # def ENCODE(a, w):
-    #     '''Return the encoded representation of ⍺'''
-    #     if len(a.shape) != 1 or len(w.shape) != 1:
-    #         raise ValueError('Encode only works with (vector/scalar)⊤(vector)')
-    #     ret = np.ndarray((w.shape[0],a.shape[0]))
-    #     for index, number in enumerate(a):
-    #         row = np.ndarray(w.shape[0])
-    #         # TODO: Finish this function
+
+def ENCODE(a, w):
+    '''Return the encoded representation of ⍵'''
+    if len(a.shape) != 1 or len(w.shape) != 1:
+        raise ValueError('Encode only works with (vector/scalar)⊤(vector)')
+    ret = []
+    number = int(w.copy())
+    scalara = a.shape == (1,)
+    for index, base in enumerate(a):
+        # If the number is less than the base, then we are done
+        if number < base:
+            ret.append([float(number)])
+            continue
+        elif base == 1:
+            ret.append([0.0])
+            continue
+        elif number == 1:
+            ret.append([1.0])
+            continue
+        digits = []
+        # Figure out the highest power of the base that will be less than the number
+        pow = 1
+        while base ** pow <= number:
+            pow += 1
+
+        pow -= 1
+        # Now, go into the main loop
+        temp = 0
+        while pow > -1:
+            # TODO: if number == 0
+            if number < base ** pow:
+                pow -= 1
+                digits.append(float(temp))
+                temp = 0
+                continue
+            number -= base ** pow
+            temp += 1
+        ret.append(digits)
+        number = int(w.copy())
+    # Pad it with zeroes in order to make it a proper matrix
+    longest = 0
+    for row in ret:
+        if len(row) > longest:
+            longest = len(row)
+    newret = []
+    for row in ret:
+        if len(row) == longest:
+            newret.append(row)
+        else:
+            # Each row should be less long than the longest
+            newret.append(([0] * (longest - len(row))) + row)
+
+    # This is to fix an issue with double-lists
+    if scalara:
+        return np.array(newret[0])
+    else:
+        return np.array(newret)
+
+
+def FIND(a, w):
+    '''Return the first index of ⍵ in ⍺'''
+    # TODO: Deal with nesting/dimensions
+    for index, item in enumerate(a):
+        if abs(w - item) < .001:
+            return np.array([index + (ONE_BASED_ARRAYS * 1)])
+    return -1

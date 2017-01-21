@@ -37,7 +37,7 @@ class APLexer(object):
     t_FUNLIT = r'\{[^\}]*⋄*\}'  # Things in curly brackets are functions
     t_LSQUR = r'\['
     t_RSQUR = r'\]'
-    t_PRIMFUNC = r'[\+\-×÷*⍟⌊⌈\|\!○<≤\=>≥≠∧∨⍲⍱~\?⍴⍳∊↑↓⍪⊤⊥⍋⍒⌽⍉⊖∪⊃⊂∩⍎⍕⌷⊣⊢≡≢¤\$\/\\⌿⍀]'
+    t_PRIMFUNC = r'[\+\-×÷*⍟⌊⌈\|\!○<≤\=>≥≠∧∨⍲⍱~\?⍴⍳∊↑↓⍪⊤⊥⍋⍒⌽⍉⊖∪⊃⊂∩⍎⍕⌷⊣⊢≡≢¤\$\/\\⌿⍀¨]'
     t_ASSIGN = r'←'
     t_FUNCARG = r'[⍺⍵]'
     t_NAME = r'\w+'
