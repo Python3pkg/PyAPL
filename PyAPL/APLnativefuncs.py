@@ -112,32 +112,9 @@ def CIRCLE(a, w):
     '''Return the corresponding trig function applied'''
     if int(a) not in (1, 2, 3, 5, 6, 7, -1, -2, -3, -5, -6, -7):
         raise NotImplementedError()
-    else:  # There's no better way to do this
-        if int(a) == 1:
-            return np.array([sin(float(w))])
-        elif int(a) == 2:
-            return np.array([cos(float(w))])
-        elif int(a) == 3:
-            return np.array([tan(float(w))])
-        elif int(a) == 5:
-            return np.array([sinh(float(w))])
-        elif int(a) == 6:
-            return np.array([cosh(float(w))])
-        elif int(a) == 7:
-            return np.array([tanh(float(w))])
-        # Inverse functions
-        elif int(a) == -1:
-            return np.array([asin(float(w))])
-        elif int(a) == -2:
-            return np.array([acos(float(w))])
-        elif int(a) == -3:
-            return np.array([atan(float(w))])
-        elif int(a) == -5:
-            return np.array([asinh(float(w))])
-        elif int(a) == -6:
-            return np.array([acosh(float(w))])
-        elif int(a) == -7:
-            return np.array([atanh(float(w))])
+    fun = { 1: sin , 2: cos , 3: tan , 5: sinh , 6: cosh , 7: tanh,
+           -1: asin,-2: acos,-3: atan,-5: asinh,-6: acosh,-7: atanh}[int(a)]
+    return np.array([fun(float(w))])
 
 
 def COMPEQ(a, w):
