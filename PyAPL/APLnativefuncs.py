@@ -163,18 +163,14 @@ def RESHAPE(a, w):
         return temp.reshape(list(map(int, list(a))))
     else:
         # Default APL behavior. Cut off elements
-        temp = np.ndarray(int(totalNewElements))
         tempravel = w.ravel()
-        for i in range(int(totalNewElements)):
-            temp[i] = tempravel[i]
+        temp = np.array([tempravel[i] for i in range(int(totalNewElements))])
         return temp.reshape(list(map(int, list(a))))
 
 def HORROT(a, w):
     '''Horizontally rotate ⍵ ⍺ times'''
     # TODO: Check the shapes of a and w
-    flata = False
-    if a.shape[0] == 1:
-        flata = True
+    flata = a.shape[0] == 1
     temp = np.copy(w)
     for index, slice in enumerate(w):
         rotby = int(
@@ -185,9 +181,7 @@ def HORROT(a, w):
 def VERTROT(a, w):
     '''Vertically rotate ⍵ ⍺ times'''
     # TODO: Check the shapes of a and w
-    flata = False
-    if a.shape[0] == 1:
-        flata = True
+    flata = a.shape[0] == 1
     # Transpose the array, then transpose it back after rotating
     w = np.transpose(w)
     temp = np.copy(w)
