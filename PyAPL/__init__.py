@@ -69,17 +69,17 @@ def applydi(func, a, w):
         elif arg == 2:
             first = not isscalar(a)
             templist = a if first else w
-            applied = [ fun(
+            applied = [ float(fun(
                             np.array([scalar   if first else float(a)]),
-                            np.array([float(w) if first else scalar]))
+                            np.array([float(w) if first else scalar])))
                         for scalar in list(templist.flat)] # Applies the function to each member individually
-            return np.array(map(float,applied)).reshape(templist.shape)
+            return np.array(applied).reshape(templist.shape)
         elif arg == 3:
             shape = a.shape
             a, w = a.ravel(), w.ravel()
-            applied = [fun(np.array([float(a.flat[i])]), np.array([float(w.flat[i])]))
+            applied = [float(fun(np.array([float(a.flat[i])]), np.array([float(w.flat[i])])))
                         for i in range(a.shape[0])]  # a.shape should be equal to w.shape
-            return np.array(map(float,applied)).reshape(shape)
+            return np.array(applied).reshape(shape)
 
     elif func in mixedFuncs:
         return fun(a, w)
