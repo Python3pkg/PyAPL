@@ -1,4 +1,3 @@
-import begin
 import logging
 
 # Change the below line to level=logging.DEBUG for more logging info
@@ -19,19 +18,6 @@ import re
 # Default behavior for APL is True
 ONE_BASED_ARRAYS = True
 
-def gcd(a, b):
-    """Compute the greatest common divisor of a and b"""
-    while b > 0:
-        a, b = b, a % b
-    return a
-
-def lcm(a, b):
-    """Compute the lowest common multiple of a and b"""
-    return a * b / gcd(a, b)
-
-def totalElements(arr):
-    return reduce(operator.mul, arr.shape, 1)
-
 # Scalar functions apply their function to each of the parts of a vector
 # individually
 scalarFuncs = '+ - × ÷ | ⌈ ⌊ * ⍟ ○ ! ^ ∨ ⍲ ⍱ < ≤ = ≥ > ≠'
@@ -50,7 +36,12 @@ def RIGHT     (a,w): return w
 def LEFT      (a,w): return a
 def ID        (w  ): return w
 
-def subapplydi(func, a, w):
+def applyuserfunc(func, a=None, w=None):
+    func = func[1:-1]  # Trim the brackets off the function
+    return apl(func, funcargs=[w, a] if a is not None else [w])
+
+def applydi(func, a, w):
+
     fun = {'+':PLUS      , '-':MINUS     , '÷':DIVIDE  , '×':MULTIPLY,
            '*':POWER     , '⍟':LOGBASE   , '|':RESIDUE , '⌈':CEILING ,
            '⌊':FLOOR     , '○':CIRCLE    , '=':COMPEQ  , '≠':COMPNEQ ,
@@ -58,17 +49,10 @@ def subapplydi(func, a, w):
            '^':GENERALAND, '∨':GENERALAND, '⍴':RESHAPE , '⌽': HORROT ,
            '⊖': VERTROT  , '⊢': RIGHT    , '⊣': LEFT
            }.get(func)
-           
-    if fun in None:
+
+    if fun is None:
         logging.error('Function not yet supported: ' + func)
         raise NotImplementedError()
-    return fun (a,w)
-
-def applyuserfunc(func, a=None, w=None):
-    func = func[1:-1]  # Trim the brackets off the function
-    return apl(func, funcargs=[w, a] if a is not None else [w])
-
-def applydi(func, a, w):
     # TODO implement all of the built in functions
     logging.info(('applydi: ' + str(func) + ' ' + str(a) + ' ' + str(w)).encode('utf-8'))
     if len(func) > 1:
@@ -81,50 +65,45 @@ def applydi(func, a, w):
             logging.fatal('Mixed lengths used! a = ' + str(a) + ' & w = ' + str(w))
             raise RuntimeError()  # TODO: pretty up error messages
         elif arg == 1:
-            return subapplydi(func, a, w)
+            return fun(a, w)
         elif arg == 2:
-            first = False if isscalar(a) else True
+            first = not isscalar(a)
             templist = a if first else w
-            tempscal =  float(w if first else a)
-            applied = [ subapplydi(func,
-                                    np.array([scalar   if first else tempscal]),
-                                    np.array([tempscal if first else scalar]))
+            applied = [ fun(
+                            np.array([scalar   if first else float(a)]),
+                            np.array([float(w) if first else scalar]))
                         for scalar in list(templist.flat)] # Applies the function to each member individually
             return np.array(map(float,applied)).reshape(templist.shape)
         elif arg == 3:
             shape = a.shape
-            a = a.ravel()
-            w = w.ravel()
-            applied = [subapplydi(func, np.array([float(a.flat[i])]), np.array([float(w.flat[i])]))
+            a, w = a.ravel(), w.ravel()
+            applied = [fun(np.array([float(a.flat[i])]), np.array([float(w.flat[i])]))
                         for i in range(a.shape[0])]  # a.shape should be equal to w.shape
             return np.array(map(float,applied)).reshape(shape)
 
     elif func in mixedFuncs:
-        return subapplydi(func, a, w)
+        return fun(a, w)
 
-def subapplymo(func, w):
+def applymo(func, w):
     fun = {'÷':INVERT ,'*':EEXP   ,'⍟':NATLOG   ,'|':ABS      ,'○' :PITIMES ,
            '⍳':COUNT  ,'⍴':SHAPE  ,'~':BOOLNOT  ,'⍉':TRANSPOSE,'⊖' :VERTFLIP,
            '⌽':HORFLIP,'⌈':ROUNDUP,'⌊':ROUNDDOWN,'?':RANDOM   ,'⊢⊣':ID}.get(func)
     if fun is None:
         logging.error('Function not yet supported: ' + func)
         raise NotImplementedError()
-    return fun(w)
 
-def applymo(func, w):
     logging.info(('applymo: ' + str(func) + ' ' + str(w)).encode('utf-8'))
     if len(func) > 1:
         # User function
         return applyuserfunc(func, w=w)
-    if func in scalarFuncs or func in '~?':
+    if func in scalarFuncs + '~?':
         if w.shape == 0:
-            return subapplymo(func, w)
+            return fun(w)
         else:
-            applied = [subapplymo(func, np.array(scalar)) for scalar in list(w.flat)]
-            return np.array(map(float,applied))
+            return np.array([float(fun(np.array(scalar))) for scalar in list(w.flat)])
 
     elif func in mixedFuncs:
-        return subapplymo(func, w)  # Just send the entire thing to the function
+        return fun(w)  # Just send the entire thing to the function
 
 def adverb(adv, func, w):
     # For lined arguments, transpose the array then at the end transpose it back
@@ -133,10 +112,8 @@ def adverb(adv, func, w):
 
     if adv in '⌿/':
         for index, item in enumerate(ret):
-            if index == 0:
-                rtot = item if isinstance(item, np.ndarray) else np.array([item])
-            else:
-                rtot = applydi(func, rtot, item if isinstance(item, np.ndarray) else np.array([item]))
+            arr = item if isinstance(item, np.ndarray) else np.array([item])
+            rtot = arr if index == 0 else applydi(func, rtot, arr)
         ret = rtot
     elif adv in '⍀\\':
         # This is where APL does the 'partial sums' of items
