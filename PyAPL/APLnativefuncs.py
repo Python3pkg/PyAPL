@@ -10,15 +10,10 @@ from random import randint
 import numpy as np
 from functools import reduce
 import operator
+from fractions import gcd
 
 # Default behavior for APL is True
 ONE_BASED_ARRAYS = True
-
-def gcd(a, b):
-    """Compute the greatest common divisor of a and b"""
-    while b > 0:
-        a, b = b, a % b
-    return a
 
 def lcm(a, b):
     """Compute the lowest common multiple of a and b"""
