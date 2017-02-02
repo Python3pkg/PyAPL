@@ -22,8 +22,6 @@ Example implementation:
 
 Features yet to be added (in no particular order):
 
-User-defined functions
-
 goto's (→)
 
 Axis-Bracket notation
