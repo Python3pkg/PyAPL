@@ -1,7 +1,7 @@
 import logging
 
 # Change the below line to level=logging.DEBUG for more logging info
-logging.basicConfig(filename='src.log', level=logging.FATAL)
+logging.basicConfig(filename='src.log', level=logging.WARNING)
 from PyAPL import APLex
 from PyAPL.APLnativefuncs import *
 import numpy as np
@@ -28,7 +28,7 @@ scalarFuncs = '+ - × ÷ | ⌈ ⌊ * ⍟ ○ ! ^ ∨ ⍲ ⍱ < ≤ = ≥ > ≠'
 mixedFuncs = '⊢ ⊣ ⍴ , ⍪ ⌽ ⊖ ⍉ ↑ ↓ / ⌿ \ ⍀ ⍳ ∊ ⍋ ⍒ ? ⌹ ⊥ ⊤ ⍕ ⍎ ⊂ ⊃ ≡ ⍷ ⌷ ~ ?'
 
 # Adverbs cannot be applied as monads, but can be applied as diads in certain situations
-adverbs = r'/\⌿⍀'
+adverbs = r'/\⌿⍀¨'
 
 def GENERALAND(a,w): return (BOOLAND if arebool(a, w) else LEASTCM   )(a, w)
 def GENERALOR (a,w): return (BOOLOR  if arebool(a, w) else GREATESTCD)(a, w)
@@ -39,6 +39,7 @@ def ID        (w  ): return w
 def applyuserfunc(func, a=None, w=None):
     func = func[1:-1]  # Trim the brackets off the function
     return apl(func, funcargs=[w, a] if a is not None else [w])
+
 
 def applydi(func, a, w):
 
@@ -54,11 +55,12 @@ def applydi(func, a, w):
         logging.error('Function not yet supported: ' + func)
         raise NotImplementedError()
     # TODO implement all of the built in functions
-    logging.info(('applydi: ' + str(func) + ' ' + str(a) + ' ' + str(w)).encode('utf-8'))
+    if DEBUG_MODE:
+        print('applydi: ' + str(func) + ' ' + str(a) + ' ' + str(w))
     if len(func) > 1:
         # This is a user function
         return applyuserfunc(func, a, w)
-
+    applied = []
     if func in scalarFuncs:
         arg = typeargs(a, w)
         if arg == -1:
@@ -92,7 +94,8 @@ def applymo(func, w):
         logging.error('Function not yet supported: ' + func)
         raise NotImplementedError()
 
-    logging.info(('applymo: ' + str(func) + ' ' + str(w)).encode('utf-8'))
+    if DEBUG_MODE:
+        print('applymo: ' + str(func) + ' ' + str(w))
     if len(func) > 1:
         # User function
         return applyuserfunc(func, w=w)
@@ -105,10 +108,13 @@ def applymo(func, w):
     elif func in mixedFuncs:
         return fun(w)  # Just send the entire thing to the function
 
-def adverb(adv, func, w):
+def adverb(adv, func, w, userfunc=None):
+    if DEBUG_MODE:
+        print('adverb: ' + str(adv) + ' ' + str(func) + ' ' + str(w))
     # For lined arguments, transpose the array then at the end transpose it back
     ret = np.copy(w)  # Do not modify in place
-    ret = ret if adv in '⌿⍀' else ret.transpose()
+    if adv in '\\/':
+        ret = ret.transpose()
 
     if adv in '⌿/':
         for index, item in enumerate(ret):
@@ -124,7 +130,20 @@ def adverb(adv, func, w):
                 rtot = applydi(func, rtot, item)
                 ret[index] = rtot
 
-    return ret if adv in '⌿⍀' else ret.transpose()
+    if adv in '/\\':
+        ret = ret.transpose()
+
+    if adv == '¨':
+        # This is the APL 'each' operator
+        # It applies a monadic function to each value of a vector
+        # TODO: Test with dimensions
+        if userfunc is None:
+            return np.array([list(applymo(func, np.array([b])))[0] for b in ret])
+        else:
+            return np.array([list(applyuserfunc(userfunc, w=np.array([b])))[0] for b in ret])
+
+    return ret
+
 
 aplnamespace = {}
 
@@ -134,7 +153,7 @@ def apl(string, funcargs=[]):
         lex = APLex.APLexer()
         lex.build()
         # logging.info('Parsing string... len = ' + str(len(string)))
-        # APL is a right to left language, so we will reverse the token order     
+        # APL is a right to left language, so we will reverse the token order
         tokens = lex.inp(str)[::-1]
         # logging.info('Parsing tokens... len = ' + str(len(tokens)))
         a = apl_wrapped(*((tokens, funcargs) if funcargs else (tokens,)))
@@ -155,20 +174,32 @@ def bracket(data, index):
     # Neat little feature of numpy. It's actually very good with indexing
     return data[tuple(indexes)]
 
+
 def apl_wrapped(tokens, funcargs=[]):
     ParsingData = None
+
     opgoto = '→'
     opassign = '←'
+
     stack = []
+
     opstack = []
+
     outofbracketdata = None
     # TODO: Account for scenario like: (2 3 4)[0 2]
+
     # Return None directly after an assignment
     hideOutp = False
 
     for token in tokens:
+        if DEBUG_MODE:
+            print("\n")
+            print("⍝⍝ NS ⍝⍝   " + str(aplnamespace))
+            print("⍝⍝ OP ⍝⍝   " + str(opstack))
+            print("⍝⍝ PD ⍝⍝   " + str(ParsingData))
+            print("⍝⍝ TK ⍝⍝   " + str(token))
+
         hideOutp = False
-        logging.info(('tk : ' + str(token.type) + '   ' + str(token.value)).encode('utf-8'))
 
         if token.type == 'COMMENT':
             continue
@@ -176,12 +207,22 @@ def apl_wrapped(tokens, funcargs=[]):
         if token.type == 'STATSEP':
             if len(opstack) == 1:  # We have a leftover op
                 if opstack[0] != '←':
-                    ParsingData = applymo(opstack.pop(), ParsingData)
+                    ParsingData = applymo(opstack.pop(), ParsingData)  # This should be unnecessary
                 else:
-                    hideOutp = True
+                    raise SyntaxError('Syntax Error!')
+            # Clear all of the data between statements
+            stack = []
+
+            opstack = []
+
+            outofbracketdata = None
+
+            hideOutp = False
+            ParsingData = None
             continue
 
         if token.type == 'INDEX':
+            results = []
             dimens = re.findall(r'[\[;][^;]+', token.value)
             # Trim the string to remove the semicolons / brackets
             results = [dim[1:-1] if ']' in dim else dim[1:] for dim in dimens]
@@ -211,7 +252,9 @@ def apl_wrapped(tokens, funcargs=[]):
             continue
 
         if ParsingData is None:  # For parsing the beginning of new sections, there must be some sort of value
+
             if token.type == 'NAME':
+
                 if not token.value in aplnamespace:
                     ParsingData = 0
                     logging.error('Referring to unassigned variable : ' + token.value + ' [will assign 0]')
@@ -239,7 +282,8 @@ def apl_wrapped(tokens, funcargs=[]):
             elif token.type == 'FUNCARG':
                 if token.value == '⍺':
                     if len(funcargs) != 2:
-                        pass  # TODO: Throw error. A monadic function was used diadically
+                        logging.fatal('Attempted to use a diadic function monadically!')
+                        raise ValueError('Attempted to use a diadic function monadically')
                     ParsingData = funcargs[1]
                     if outofbracketdata is not None:
                         ParsingData = bracket(ParsingData, outofbracketdata)
@@ -281,11 +325,14 @@ def apl_wrapped(tokens, funcargs=[]):
                 elif token.type == 'FUNCARG':
                     if token.value == '⍺':
                         if len(funcargs) != 2:
-                            print('UHOH')  # TODO: Throw error. A monadic function was used diadically
-                        ParsingData = applydi(opstack.pop(), funcargs[1], ParsingData)
+                            logging.fatal('Attempted to use a diadic function monadically!')
+                            raise ValueError('Attempted to use a diadic function monadically')
+                        else:
+                            ParsingData = applydi(opstack.pop(), funcargs[1], ParsingData)
                     elif token.value == '⍵':
                         if len(funcargs) == 0:
-                            raise RuntimeError()  # Shouldn't happen. No funcargs were passed
+                            logging.fatal('Function arguments used outside of literal context!')
+                            raise SyntaxError('Function arguments used outside of literal context!')
                         ParsingData = applydi(opstack.pop(), funcargs[0], ParsingData)
 
                 elif token.type == 'NAME':
@@ -296,12 +343,15 @@ def apl_wrapped(tokens, funcargs=[]):
                             opstack = [opstack[1]]
                             continue
                         # Assign the parsing data to the value in the namespace
+                        if DEBUG_MODE:
+                            print("⍝⍝ AS ⍝⍝   " + str(token.value) + " := " + str(ParsingData))
                         aplnamespace[token.value] = ParsingData
                         opstack.pop()
                         hideOutp = True
                         continue
                     if not token.value in aplnamespace:
-                        logging.error('Referring to unassigned variable : ' + token.value + ' [will use 0]')
+                        if DEBUG_MODE:
+                            print('Referring to unassigned variable : ' + token.value + ' [will use 0]')
                         ParsingData = applydi(opstack.pop(), 0, ParsingData)
                     else:
                         get = aplnamespace[token.value]
@@ -309,7 +359,10 @@ def apl_wrapped(tokens, funcargs=[]):
                             ParsingData = applydi(opstack.pop(), get, ParsingData)
                         else:
                             # The name must be a function
-                            # Apply the previous function as a monad
+                            # Apply the previous function as a monad ONLY if there's no adverb
+                            if opstack[-1] in adverbs:
+                                ParsingData = adverb(opstack.pop(), token.value, ParsingData, userfunc=get)
+                                continue
                             ParsingData = applymo(opstack.pop(), ParsingData)
                             opstack.append(token.value)
                         if outofbracketdata is not None:
@@ -320,7 +373,7 @@ def apl_wrapped(tokens, funcargs=[]):
                     if opstack[-1] == opassign:
                         # It shouldn't be
                         # Raise syntax error
-                        raise RuntimeError()
+                        raise SyntaxError("Syntax Error!")
                     # Check if the thing in the opstack is an adverb
                     if opstack[-1] in adverbs:
                         ParsingData = adverb(opstack.pop(), token.value, ParsingData)
@@ -337,6 +390,7 @@ def apl_wrapped(tokens, funcargs=[]):
             hideOutp = True
 
     return ParsingData if not hideOutp else None
+
 
 if __name__ == '__main__':
     while (True):

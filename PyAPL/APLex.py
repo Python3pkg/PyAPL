@@ -1,3 +1,7 @@
+#
+#  A lexer built to tokenize the APL language using PLY
+#
+
 import ply.lex as lex
 from PyAPL import *
 import numpy as np
@@ -33,7 +37,7 @@ class APLexer(object):
     t_FUNLIT = r'\{[^\}]*⋄*\}'  # Things in curly brackets are functions
     t_LSQUR = r'\['
     t_RSQUR = r'\]'
-    t_PRIMFUNC = r'[\+\-×÷*⍟⌊⌈\|\!○<≤\=>≥≠∧∨⍲⍱~\?⍴⍳∊↑↓⍪⍋⍒⌽⍉⊖∪⊃⊂∩⍎⍕⌷⊣⊢≡≢¤\$\/\\⌿⍀]'
+    t_PRIMFUNC = r'[\+\-×÷*⍟⌊⌈\|\!○<≤\=>≥≠∧∨⍲⍱~\?⍴⍳∊↑↓⍪⊤⊥⍋⍒⌽⍉⊖∪⊃⊂∩⍎⍕⌷⊣⊢≡≢¤\$\/\\⌿⍀¨]'
     t_ASSIGN = r'←'
     t_FUNCARG = r'[⍺⍵]'
     t_NAME = r'\w+'
