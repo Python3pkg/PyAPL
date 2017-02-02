@@ -1,7 +1,3 @@
-import logging
-
-# Change the below line to level=logging.DEBUG for more logging info
-logging.basicConfig(filename='src.log', level=logging.WARNING)
 from PyAPL import APLex
 from PyAPL.APLnativefuncs import *
 import numpy as np
@@ -17,6 +13,8 @@ import re
 
 # Default behavior for APL is True
 ONE_BASED_ARRAYS = True
+
+DEBUG_MODE = False
 
 # Scalar functions apply their function to each of the parts of a vector
 # individually
@@ -48,24 +46,24 @@ def applydi(func, a, w):
            '⌊':FLOOR     , '○':CIRCLE    , '=':COMPEQ  , '≠':COMPNEQ ,
            '<':COMPLES   , '>':COMPGRE   , '≥':COMPGREQ, '≤':COMPLESQ,
            '^':GENERALAND, '∨':GENERALAND, '⍴':RESHAPE , '⌽': HORROT ,
+           '⊤':ENCODE, '⊥':DECODE, '⍳':FIND,
            '⊖': VERTROT  , '⊢': RIGHT    , '⊣': LEFT
            }.get(func)
 
-    if fun is None:
-        logging.error('Function not yet supported: ' + func)
-        raise NotImplementedError()
-    # TODO implement all of the built in functions
-    if DEBUG_MODE:
-        print('applydi: ' + str(func) + ' ' + str(a) + ' ' + str(w))
     if len(func) > 1:
         # This is a user function
         return applyuserfunc(func, a, w)
+    if fun is None:
+        raise NotImplementedError('Function not yet supported: ' + func)
+    # TODO implement all of the built in functions
+    if DEBUG_MODE:
+        print('applydi: ' + str(func) + ' ' + str(a) + ' ' + str(w))
+
     applied = []
     if func in scalarFuncs:
         arg = typeargs(a, w)
         if arg == -1:
-            logging.fatal('Mixed lengths used! a = ' + str(a) + ' & w = ' + str(w))
-            raise RuntimeError()  # TODO: pretty up error messages
+            raise RuntimeError('Mixed lengths used! a = ' + str(a) + ' & w = ' + str(w))
         elif arg == 1:
             return fun(a, w)
         elif arg == 2:
@@ -90,15 +88,16 @@ def applymo(func, w):
     fun = {'÷':INVERT ,'*':EEXP   ,'⍟':NATLOG   ,'|':ABS      ,'○' :PITIMES ,
            '⍳':COUNT  ,'⍴':SHAPE  ,'~':BOOLNOT  ,'⍉':TRANSPOSE,'⊖' :VERTFLIP,
            '⌽':HORFLIP,'⌈':ROUNDUP,'⌊':ROUNDDOWN,'?':RANDOM   ,'⊢⊣':ID}.get(func)
-    if fun is None:
-        logging.error('Function not yet supported: ' + func)
-        raise NotImplementedError()
 
-    if DEBUG_MODE:
-        print('applymo: ' + str(func) + ' ' + str(w))
     if len(func) > 1:
         # User function
         return applyuserfunc(func, w=w)
+    if fun is None:
+        raise NotImplementedError('Function not yet supported: ' + func)
+
+    if DEBUG_MODE:
+        print('applymo: ' + str(func) + ' ' + str(w))
+
     if func in scalarFuncs + '~?':
         if w.shape == 0:
             return fun(w)
@@ -240,8 +239,7 @@ def apl_wrapped(tokens, funcargs=[]):
                 ParsingData = applymo(opstack.pop(), ParsingData)
 
             if stack == []:
-                logging.fatal('Unmatched parens. Unable to continue')
-                raise RuntimeError()
+                raise RuntimeError('Unmatched parens. Unable to continue')
             else:
                 lStack = stack.pop()
                 lopstack = lStack[1]
@@ -282,7 +280,6 @@ def apl_wrapped(tokens, funcargs=[]):
             elif token.type == 'FUNCARG':
                 if token.value == '⍺':
                     if len(funcargs) != 2:
-                        logging.fatal('Attempted to use a diadic function monadically!')
                         raise ValueError('Attempted to use a diadic function monadically')
                     ParsingData = funcargs[1]
                     if outofbracketdata is not None:
@@ -315,8 +312,7 @@ def apl_wrapped(tokens, funcargs=[]):
 
                 if token.type in ['NUMBERLIT','VECTORLIT']:
                     if opstack[-1] == opassign:
-                        logging.fatal('Attempting to assign a value to a constant, not a symbolic name.')
-                        raise RuntimeError()  # TODO: Pretty up error messages
+                        raise RuntimeError('Attempting to assign a value to a constant, not a symbolic name.')
                     # This is the case when it is literal operation value
                     # e.g.: 5 * x
                     ParsingData = applydi(opstack.pop(), token.value, ParsingData)
@@ -325,13 +321,11 @@ def apl_wrapped(tokens, funcargs=[]):
                 elif token.type == 'FUNCARG':
                     if token.value == '⍺':
                         if len(funcargs) != 2:
-                            logging.fatal('Attempted to use a diadic function monadically!')
                             raise ValueError('Attempted to use a diadic function monadically')
                         else:
                             ParsingData = applydi(opstack.pop(), funcargs[1], ParsingData)
                     elif token.value == '⍵':
                         if len(funcargs) == 0:
-                            logging.fatal('Function arguments used outside of literal context!')
                             raise SyntaxError('Function arguments used outside of literal context!')
                         ParsingData = applydi(opstack.pop(), funcargs[0], ParsingData)
 

@@ -354,6 +354,6 @@ def FIND(a, w):
     '''Return the first index of ⍵ in ⍺'''
     # TODO: Deal with nesting/dimensions
     for index, item in enumerate(a):
-        if abs(w - item) < .001:
+        if abs(w - item) < .001: # Weird closeness function (arbitrary)
             return np.array([index + (ONE_BASED_ARRAYS * 1)])
     return -1
