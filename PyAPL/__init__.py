@@ -1,13 +1,6 @@
 from PyAPL import APLex
 from PyAPL.APLnativefuncs import *
 import numpy as np
-import operator
-from functools import reduce
-
-from math import exp, log, pi, sin, sinh, cos, cosh, tan, tanh, \
-    asin, asinh, acos, acosh, atan, atanh, floor, ceil
-from decimal import Decimal
-from random import randint
 
 import re
 
@@ -28,11 +21,21 @@ mixedFuncs = '⊢ ⊣ ⍴ , ⍪ ⌽ ⊖ ⍉ ↑ ↓ / ⌿ \ ⍀ ⍳ ∊ ⍋ ⍒ 
 # Adverbs cannot be applied as monads, but can be applied as diads in certain situations
 adverbs = r'/\⌿⍀¨'
 
-def GENERALAND(a,w): return (BOOLAND if arebool(a, w) else LEASTCM   )(a, w)
-def GENERALOR (a,w): return (BOOLOR  if arebool(a, w) else GREATESTCD)(a, w)
-def RIGHT     (a,w): return w
-def LEFT      (a,w): return a
-def ID        (w  ): return w
+
+def GENERALAND(a, w): return (BOOLAND if arebool(a, w) else LEASTCM)(a, w)
+
+
+def GENERALOR(a, w): return (BOOLOR if arebool(a, w) else GREATESTCD)(a, w)
+
+
+def RIGHT(a, w): return w
+
+
+def LEFT(a, w): return a
+
+
+def ID(w): return w
+
 
 def applyuserfunc(func, a=None, w=None):
     func = func[1:-1]  # Trim the brackets off the function
@@ -40,14 +43,13 @@ def applyuserfunc(func, a=None, w=None):
 
 
 def applydi(func, a, w):
-
-    fun = {'+':PLUS      , '-':MINUS     , '÷':DIVIDE  , '×':MULTIPLY,
-           '*':POWER     , '⍟':LOGBASE   , '|':RESIDUE , '⌈':CEILING ,
-           '⌊':FLOOR     , '○':CIRCLE    , '=':COMPEQ  , '≠':COMPNEQ ,
-           '<':COMPLES   , '>':COMPGRE   , '≥':COMPGREQ, '≤':COMPLESQ,
-           '^':GENERALAND, '∨':GENERALAND, '⍴':RESHAPE , '⌽': HORROT ,
-           '⊤':ENCODE, '⊥':DECODE, '⍳':FIND,
-           '⊖': VERTROT  , '⊢': RIGHT    , '⊣': LEFT
+    fun = {'+': PLUS, '-': MINUS, '÷': DIVIDE, '×': MULTIPLY,
+           '*': POWER, '⍟': LOGBASE, '|': RESIDUE, '⌈': CEILING,
+           '⌊': FLOOR, '○': CIRCLE, '=': COMPEQ, '≠': COMPNEQ,
+           '<': COMPLES, '>': COMPGRE, '≥': COMPGREQ, '≤': COMPLESQ,
+           '^': GENERALAND, '∨': GENERALAND, '⍴': RESHAPE, '⌽': HORROT,
+           '⊤': ENCODE, '⊥': DECODE, '⍳': FIND,
+           '⊖': VERTROT, '⊢': RIGHT, '⊣': LEFT
            }.get(func)
 
     if len(func) > 1:
@@ -69,25 +71,26 @@ def applydi(func, a, w):
         elif arg == 2:
             first = not isscalar(a)
             templist = a if first else w
-            applied = [ float(fun(
-                            np.array([scalar   if first else float(a)]),
-                            np.array([float(w) if first else scalar])))
-                        for scalar in list(templist.flat)] # Applies the function to each member individually
+            applied = [float(fun(
+                np.array([scalar if first else float(a)]),
+                np.array([float(w) if first else scalar])))
+                       for scalar in list(templist.flat)]  # Applies the function to each member individually
             return np.array(applied).reshape(templist.shape)
         elif arg == 3:
             shape = a.shape
             a, w = a.ravel(), w.ravel()
             applied = [float(fun(np.array([float(a.flat[i])]), np.array([float(w.flat[i])])))
-                        for i in range(a.shape[0])]  # a.shape should be equal to w.shape
+                       for i in range(a.shape[0])]  # a.shape should be equal to w.shape
             return np.array(applied).reshape(shape)
 
     elif func in mixedFuncs:
         return fun(a, w)
 
+
 def applymo(func, w):
-    fun = {'÷':INVERT ,'*':EEXP   ,'⍟':NATLOG   ,'|':ABS      ,'○' :PITIMES ,
-           '⍳':COUNT  ,'⍴':SHAPE  ,'~':BOOLNOT  ,'⍉':TRANSPOSE,'⊖' :VERTFLIP,
-           '⌽':HORFLIP,'⌈':ROUNDUP,'⌊':ROUNDDOWN,'?':RANDOM   ,'⊢⊣':ID}.get(func)
+    fun = {'÷': INVERT, '*': EEXP, '⍟': NATLOG, '|': ABS, '○': PITIMES,
+           '⍳': COUNT, '⍴': SHAPE, '~': BOOLNOT, '⍉': TRANSPOSE, '⊖': VERTFLIP,
+           '⌽': HORFLIP, '⌈': ROUNDUP, '⌊': ROUNDDOWN, '?': RANDOM, '⊢⊣': ID}.get(func)
 
     if len(func) > 1:
         # User function
@@ -106,6 +109,7 @@ def applymo(func, w):
 
     elif func in mixedFuncs:
         return fun(w)  # Just send the entire thing to the function
+
 
 def adverb(adv, func, w, userfunc=None):
     if DEBUG_MODE:
@@ -146,9 +150,11 @@ def adverb(adv, func, w, userfunc=None):
 
 aplnamespace = {}
 
+
 def apl(string, funcargs=[]):
     out = []
-    for str in string.split('\n'): # if '\n' not in string, split will return a 1 element list containing string, so there is no need for separate case
+    for str in string.split(
+            '\n'):  # if '\n' not in string, split will return a 1 element list containing string, so there is no need for separate case
         lex = APLex.APLexer()
         lex.build()
         # logging.info('Parsing string... len = ' + str(len(string)))
@@ -159,6 +165,7 @@ def apl(string, funcargs=[]):
         if a is not None:
             out.append(a)
     return out[0] if len(out) == 1 else out
+
 
 def bracket(data, index):
     # TODO: Check if the indexes go outside of the data range
@@ -225,7 +232,7 @@ def apl_wrapped(tokens, funcargs=[]):
             dimens = re.findall(r'[\[;][^;]+', token.value)
             # Trim the string to remove the semicolons / brackets
             results = [dim[1:-1] if ']' in dim else dim[1:] for dim in dimens]
-            outofbracketdata = list(map(apl_wrapped,results))
+            outofbracketdata = list(map(apl_wrapped, results))
 
         if token.type == 'RPAREN':
             stack.append((ParsingData, opstack))  # store both this parsing data and the opstack
@@ -295,7 +302,7 @@ def apl_wrapped(tokens, funcargs=[]):
         else:
             if len(opstack) == 0:
 
-                if token.type in ['PRIMFUNC','FUNLIT','ASSIGN']:
+                if token.type in ['PRIMFUNC', 'FUNLIT', 'ASSIGN']:
                     opstack.append(token.value)
                     continue
                 elif token.type == 'NAME':
@@ -310,7 +317,7 @@ def apl_wrapped(tokens, funcargs=[]):
                     opstack.append(token.value)
                     continue
 
-                if token.type in ['NUMBERLIT','VECTORLIT']:
+                if token.type in ['NUMBERLIT', 'VECTORLIT']:
                     if opstack[-1] == opassign:
                         raise RuntimeError('Attempting to assign a value to a constant, not a symbolic name.')
                     # This is the case when it is literal operation value
