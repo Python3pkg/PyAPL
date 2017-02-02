@@ -265,16 +265,11 @@ def DEPTH(w, recursivecall=False):
     '''Return how deeply nested something is
         Will return negatives if is of non-uniform depth'''
     # TODO: Check for non-uniform depth and return negative numbers
-    depth = 0
     if not isinstance(w, np.ndarray) and not isinstance(w, list):
         return 0
     if not isinstance(w[0], np.ndarray) and not isinstance(w, list) and w.shape == (1,) and not recursivecall:
         return 0
-    for item in list(w):
-        current = DEPTH(item, recursivecall=True) + 1
-        if current > depth:
-            depth = current
-    return depth
+    return max([DEPTH(item, recursivecall=True) + 1 for item in list(w)]) if list(w) else 0
 
     # def FIRST(w):
     #     '''Return the first major item of ⍵'''
