@@ -1,7 +1,13 @@
 # PyAPL
 A python implementation of the APL programming language
 
-NOTE: This is not yet a complete project. So far, it works with fairly simple code samples. There is a LOT of features and testing that must be added
+For more info on the language, check out the dyalog reference: http://docs.dyalog.com/13.0/Dyalog%20APL%20Language%20Reference.v13.0.pdf
+
+or, look at the legendary APL dictionary: http://www.jsoftware.com/papers/APLDictionary.htm
+
+Also, you can run APL in your browser! http://tryapl.org/ [highly recommended if you don't have a keyboard setup!]
+
+NOTE: This is not yet a complete project. So far, it works with fairly simple code samples.
 
 To install, use pip:
 
