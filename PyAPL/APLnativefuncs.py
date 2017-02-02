@@ -221,7 +221,7 @@ def COUNT(w):
 
 def SHAPE(w):
     '''Return the shape of ⍵'''
-    return np.array([w.shape])
+    return np.array(w.shape)
 
 def BOOLNOT(w):
     '''Return the negation of ⍵'''

@@ -1,4 +1,3 @@
-import begin
 import logging
 
 # Change the below line to level=logging.DEBUG for more logging info
@@ -19,23 +18,6 @@ import re
 # Default behavior for APL is True
 ONE_BASED_ARRAYS = True
 
-
-def gcd(a, b):
-    """Compute the greatest common divisor of a and b"""
-    while b > 0:
-        a, b = b, a % b
-    return a
-
-
-def lcm(a, b):
-    """Compute the lowest common multiple of a and b"""
-    return a * b / gcd(a, b)
-
-
-def totalElements(arr):
-    return reduce(operator.mul, arr.shape, 1)
-
-
 # Scalar functions apply their function to each of the parts of a vector
 # individually
 scalarFuncs = '+ - × ÷ | ⌈ ⌊ * ⍟ ○ ! ^ ∨ ⍲ ⍱ < ≤ = ≥ > ≠'
@@ -48,184 +30,90 @@ mixedFuncs = '⊢ ⊣ ⍴ , ⍪ ⌽ ⊖ ⍉ ↑ ↓ / ⌿ \ ⍀ ⍳ ∊ ⍋ ⍒ 
 # Adverbs cannot be applied as monads, but can be applied as diads in certain situations
 adverbs = r'/\⌿⍀'
 
-
-def subapplydi(func, a, w):
-    if func == '+':
-        return PLUS(a, w)
-    elif func == '-':
-        return MINUS(a, w)
-    elif func == '÷':
-        return DIVIDE(a, w)
-    elif func == '×':
-        return MULTIPLY(a, w)
-    elif func == '*':
-        return POWER(a, w)
-    elif func == '⍟':
-        return LOGBASE(a, w)
-    elif func == '|':
-        return RESIDUE(a, w)
-    elif func == '⌈':
-        return CEILING(a, w)
-    elif func == '⌊':
-        return FLOOR(a, w)
-    elif func == '○':
-        return CIRCLE(a, w)
-    elif func == '=':
-        return COMPEQ(a, w)
-    elif func == '≠':
-        return COMPNEQ(a, w)
-    elif func == '<':
-        return COMPLES(a, w)
-    elif func == '>':
-        return COMPGRE(a, w)
-    elif func == '≥':
-        return COMPGREQ(a, w)
-    elif func == '≤':
-        return COMPLESQ(a, w)
-    elif func == '^':
-        if arebool(a, w):
-            return BOOLAND(a, w)
-        else:
-            return LEASTCM(a, w)
-    elif func == '∨':
-        if arebool(a, w):
-            return BOOLOR(a, w)
-        else:
-            return GREATESTCD(a, w)
-    elif func == '⍴':
-        return RESHAPE(a, w)
-    elif func == '⌽':
-        return HORROT(a, w)
-    elif func == '⊖':
-        return VERTROT(a, w)
-    elif func == '⊢':
-        return w
-    elif func == '⊣':
-        return a
-    else:
-        logging.error('Function not yet supported: ' + func)
-        raise NotImplementedError()
-
+def GENERALAND(a,w): return (BOOLAND if arebool(a, w) else LEASTCM   )(a, w)
+def GENERALOR (a,w): return (BOOLOR  if arebool(a, w) else GREATESTCD)(a, w)
+def RIGHT     (a,w): return w
+def LEFT      (a,w): return a
+def ID        (w  ): return w
 
 def applyuserfunc(func, a=None, w=None):
     func = func[1:-1]  # Trim the brackets off the function
     return apl(func, funcargs=[w, a] if a is not None else [w])
 
-
 def applydi(func, a, w):
+
+    fun = {'+':PLUS      , '-':MINUS     , '÷':DIVIDE  , '×':MULTIPLY,
+           '*':POWER     , '⍟':LOGBASE   , '|':RESIDUE , '⌈':CEILING ,
+           '⌊':FLOOR     , '○':CIRCLE    , '=':COMPEQ  , '≠':COMPNEQ ,
+           '<':COMPLES   , '>':COMPGRE   , '≥':COMPGREQ, '≤':COMPLESQ,
+           '^':GENERALAND, '∨':GENERALAND, '⍴':RESHAPE , '⌽': HORROT ,
+           '⊖': VERTROT  , '⊢': RIGHT    , '⊣': LEFT
+           }.get(func)
+
+    if fun is None:
+        logging.error('Function not yet supported: ' + func)
+        raise NotImplementedError()
     # TODO implement all of the built in functions
     logging.info(('applydi: ' + str(func) + ' ' + str(a) + ' ' + str(w)).encode('utf-8'))
     if len(func) > 1:
         # This is a user function
         return applyuserfunc(func, a, w)
 
-    applied = []
     if func in scalarFuncs:
         arg = typeargs(a, w)
         if arg == -1:
             logging.fatal('Mixed lengths used! a = ' + str(a) + ' & w = ' + str(w))
             raise RuntimeError()  # TODO: pretty up error messages
         elif arg == 1:
-            return subapplydi(func, a, w)
+            return fun(a, w)
         elif arg == 2:
-            first = False if isscalar(a) else True
+            first = not isscalar(a)
             templist = a if first else w
-            tempscal = float(a) if not first else float(w)
-            for scalar in list(templist.flat):  # Applies the function to each member individually
-                applied.append(float(subapplydi(func,
-                                                np.array([scalar]) if first else np.array([tempscal]),
-                                                np.array([scalar]) if not first else np.array([tempscal]))))
-            applied = np.array(applied).reshape(templist.shape)
+            applied = [ float(fun(
+                            np.array([scalar   if first else float(a)]),
+                            np.array([float(w) if first else scalar])))
+                        for scalar in list(templist.flat)] # Applies the function to each member individually
+            return np.array(applied).reshape(templist.shape)
         elif arg == 3:
             shape = a.shape
-            a = a.ravel()
-            w = w.ravel()
-            for i in range(0, a.shape[0]):  # a.shape should be equal to w.shape
-                applied.append(float(subapplydi(func, np.array([float(a.flat[i])]), np.array([float(w.flat[i])]))))
-            applied = np.array(applied).reshape(shape)
-        return applied
+            a, w = a.ravel(), w.ravel()
+            applied = [float(fun(np.array([float(a.flat[i])]), np.array([float(w.flat[i])])))
+                        for i in range(a.shape[0])]  # a.shape should be equal to w.shape
+            return np.array(applied).reshape(shape)
 
     elif func in mixedFuncs:
-        return subapplydi(func, a, w)
+        return fun(a, w)
 
-
-def subapplymo(func, w):
-    if func == '÷':
-        return INVERT(w)
-    elif func == '*':
-        return EEXP(w)
-    elif func == '⍟':
-        return NATLOG(w)
-    elif func == '|':
-        return ABS(w)
-    elif func == '○':
-        return PITIMES(w)
-    elif func == '⍳':
-        return COUNT(w)
-    elif func == '⍴':
-        return SHAPE(w)
-    elif func == '~':
-        # Tilde
-        ### "NEGATE" function ###
-        if not arebool(w, w):
-            raise TypeError()
-        return BOOLNOT(w)
-    elif func == '⍉':
-        return TRANSPOSE(w)
-    elif func == '⊖':
-        return VERTFLIP(w)
-    elif func == '⌽':
-        return HORFLIP(w)
-    elif func == '⌈':
-        return ROUNDUP(w)
-    elif func == '⌊':
-        return ROUNDDOWN(w)
-    elif func == '?':
-        return RANDOM(w)
-    elif func in '⊢⊣':
-        return w
-    else:
+def applymo(func, w):
+    fun = {'÷':INVERT ,'*':EEXP   ,'⍟':NATLOG   ,'|':ABS      ,'○' :PITIMES ,
+           '⍳':COUNT  ,'⍴':SHAPE  ,'~':BOOLNOT  ,'⍉':TRANSPOSE,'⊖' :VERTFLIP,
+           '⌽':HORFLIP,'⌈':ROUNDUP,'⌊':ROUNDDOWN,'?':RANDOM   ,'⊢⊣':ID}.get(func)
+    if fun is None:
         logging.error('Function not yet supported: ' + func)
         raise NotImplementedError()
 
-
-def applymo(func, w):
     logging.info(('applymo: ' + str(func) + ' ' + str(w)).encode('utf-8'))
     if len(func) > 1:
         # User function
         return applyuserfunc(func, w=w)
-    applied = []
-    if func in scalarFuncs or func in '~?':
+    if func in scalarFuncs + '~?':
         if w.shape == 0:
-            return subapplymo(func, w)
+            return fun(w)
         else:
-            for scalar in list(w.flat):
-                applied.append(float(subapplymo(func, np.array(scalar))))
-            applied = np.array(applied)
-            return applied
+            return np.array([float(fun(np.array(scalar))) for scalar in list(w.flat)])
 
     elif func in mixedFuncs:
-        return subapplymo(func, w)  # Just send the entire thing to the function
-
+        return fun(w)  # Just send the entire thing to the function
 
 def adverb(adv, func, w):
     # For lined arguments, transpose the array then at the end transpose it back
     ret = np.copy(w)  # Do not modify in place
-    if adv not in '⌿⍀':
-        ret = ret.transpose()
+    ret = ret if adv in '⌿⍀' else ret.transpose()
 
     if adv in '⌿/':
         for index, item in enumerate(ret):
-            if index == 0:
-                if not isinstance(item, np.ndarray):
-                    rtot = np.array([item])
-                else:
-                    rtot = item
-            else:
-                if not isinstance(item, np.ndarray):
-                    rtot = applydi(func, rtot, np.array([item]))
-                else:
-                    rtot = applydi(func, rtot, item)
+            arr = item if isinstance(item, np.ndarray) else np.array([item])
+            rtot = arr if index == 0 else applydi(func, rtot, arr)
         ret = rtot
     elif adv in '⍀\\':
         # This is where APL does the 'partial sums' of items
@@ -236,47 +124,23 @@ def adverb(adv, func, w):
                 rtot = applydi(func, rtot, item)
                 ret[index] = rtot
 
-    if adv not in '⌿⍀':
-        ret = ret.transpose()
-    return ret
-
+    return ret if adv in '⌿⍀' else ret.transpose()
 
 aplnamespace = {}
 
-
 def apl(string, funcargs=[]):
-    if not '\n' in string:
-        lex = APLex.APLexer()
-        lex.build()
-        # logging.info('Parsing string... len = ' + str(len(string)))
-        tokens = lex.inp(string)
-        # APL is a right to left language, so we will reverse the token order
-        tokens = tokens[::-1]
-        # logging.info('Parsing tokens... len = ' + str(len(tokens)))
-        if funcargs is []:
-            a = apl_wrapped(tokens)
-        else:
-            a = apl_wrapped(tokens, funcargs)
-        return a
     out = []
-    for str in string.split('\n'):
+    for str in string.split('\n'): # if '\n' not in string, split will return a 1 element list containing string, so there is no need for separate case
         lex = APLex.APLexer()
         lex.build()
         # logging.info('Parsing string... len = ' + str(len(string)))
-        tokens = lex.inp(str)
-        # APL is a right to left language, so we will reverse the token order
-        tokens = tokens[::-1]
+        # APL is a right to left language, so we will reverse the token order     
+        tokens = lex.inp(str)[::-1]
         # logging.info('Parsing tokens... len = ' + str(len(tokens)))
-        if funcargs is []:
-            a = apl_wrapped(tokens)
-        else:
-            a = apl_wrapped(tokens, funcargs)
+        a = apl_wrapped(*((tokens, funcargs) if funcargs else (tokens,)))
         if a is not None:
             out.append(a)
-    if len(out) == 1:
-        return out[0]
-    return out
-
+    return out[0] if len(out) == 1 else out
 
 def bracket(data, index):
     # TODO: Check if the indexes go outside of the data range
@@ -291,27 +155,19 @@ def bracket(data, index):
     # Neat little feature of numpy. It's actually very good with indexing
     return data[tuple(indexes)]
 
-
 def apl_wrapped(tokens, funcargs=[]):
     ParsingData = None
-
     opgoto = '→'
     opassign = '←'
-
     stack = []
-
     opstack = []
-
     outofbracketdata = None
     # TODO: Account for scenario like: (2 3 4)[0 2]
-
     # Return None directly after an assignment
     hideOutp = False
 
     for token in tokens:
-
         hideOutp = False
-
         logging.info(('tk : ' + str(token.type) + '   ' + str(token.value)).encode('utf-8'))
 
         if token.type == 'COMMENT':
@@ -326,15 +182,10 @@ def apl_wrapped(tokens, funcargs=[]):
             continue
 
         if token.type == 'INDEX':
-            results = []
             dimens = re.findall(r'[\[;][^;]+', token.value)
-            for item in dimens:
-                if ']' in item:  # Trim the string to remove the semicolons / brackets
-                    item = item[1:-1]
-                else:
-                    item = item[1:]
-                results.append(apl_wrapped(item))
-            outofbracketdata = results
+            # Trim the string to remove the semicolons / brackets
+            results = [dim[1:-1] if ']' in dim else dim[1:] for dim in dimens]
+            outofbracketdata = list(map(apl_wrapped,results))
 
         if token.type == 'RPAREN':
             stack.append((ParsingData, opstack))  # store both this parsing data and the opstack
@@ -343,7 +194,6 @@ def apl_wrapped(tokens, funcargs=[]):
             continue
 
         if token.type == 'LPAREN':
-
             if len(opstack) == 1:  # e.g.: (÷3+4) - 2
                 # Apply the last op as a monad
                 ParsingData = applymo(opstack.pop(), ParsingData)
@@ -361,9 +211,7 @@ def apl_wrapped(tokens, funcargs=[]):
             continue
 
         if ParsingData is None:  # For parsing the beginning of new sections, there must be some sort of value
-
             if token.type == 'NAME':
-
                 if not token.value in aplnamespace:
                     ParsingData = 0
                     logging.error('Referring to unassigned variable : ' + token.value + ' [will assign 0]')
@@ -406,13 +254,7 @@ def apl_wrapped(tokens, funcargs=[]):
         else:
             if len(opstack) == 0:
 
-                if token.type == 'PRIMFUNC':
-                    opstack.append(token.value)
-                    continue
-                elif token.type == 'FUNLIT':
-                    opstack.append(token.value)
-                    continue
-                elif token.type == 'ASSIGN':
+                if token.type in ['PRIMFUNC','FUNLIT','ASSIGN']:
                     opstack.append(token.value)
                     continue
                 elif token.type == 'NAME':
@@ -427,7 +269,7 @@ def apl_wrapped(tokens, funcargs=[]):
                     opstack.append(token.value)
                     continue
 
-                if token.type == 'NUMBERLIT' or token.type == 'VECTORLIT':
+                if token.type in ['NUMBERLIT','VECTORLIT']:
                     if opstack[-1] == opassign:
                         logging.fatal('Attempting to assign a value to a constant, not a symbolic name.')
                         raise RuntimeError()  # TODO: Pretty up error messages
@@ -495,7 +337,6 @@ def apl_wrapped(tokens, funcargs=[]):
             hideOutp = True
 
     return ParsingData if not hideOutp else None
-
 
 if __name__ == '__main__':
     while (True):
