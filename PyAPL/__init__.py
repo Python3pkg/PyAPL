@@ -394,7 +394,7 @@ def apl_wrapped(tokens, funcargs=[]):
 
 
 introText = \
-    "PyAPL version '0.2.1'  |  Created by Matt Torrence  |  Interactive Mode\n" \
+    "PyAPL version '0.2.2'  |  Created by Matt Torrence  |  Interactive Mode\n" \
     "Interactive Mode [NOTE: Input cursor may not appear with some consoles]\n" \
     "--------------------  github.com/Torrencem/PyAPL  ---------------------\n"
 
