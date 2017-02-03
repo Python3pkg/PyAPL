@@ -1,7 +1,7 @@
 from PyAPL import APLex
 from PyAPL.APLnativefuncs import *
 import numpy as np
-import readline
+import readline  # For using interactive mode
 import re
 
 # Default behavior for APL is True
@@ -262,7 +262,6 @@ def apl_wrapped(tokens, funcargs=[]):
 
                 if not token.value in aplnamespace:
                     ParsingData = 0
-                    logging.error('Referring to unassigned variable : ' + token.value + ' [will assign 0]')
                     aplnamespace[token.value] = 0
                     continue
                 else:
@@ -395,7 +394,7 @@ def apl_wrapped(tokens, funcargs=[]):
 
 introText = \
     "PyAPL version '0.2.2'  |  Created by Matt Torrence  |  Interactive Mode\n" \
-    "Interactive Mode [NOTE: Input cursor may not appear with some consoles]\n" \
+    "                          Interactive Mode                               " \
     "--------------------  github.com/Torrencem/PyAPL  ---------------------\n"
 
 
@@ -403,7 +402,7 @@ def launchAPL():
     print(introText)
     while True:
         try:
-            code = apl(input())
+            code = apl(input('APL>'))
         except KeyboardInterrupt:
             break
         # Comparison with 'in' does not work
