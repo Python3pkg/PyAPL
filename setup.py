@@ -12,6 +12,7 @@ setup(
   classifiers = [],
   install_requires=[
           'ply',
-          'numpy'
+      'numpy',
+      'readline'
       ]
 )

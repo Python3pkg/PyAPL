@@ -1,7 +1,7 @@
 from PyAPL import APLex
 from PyAPL.APLnativefuncs import *
 import numpy as np
-
+import readline
 import re
 
 # Default behavior for APL is True
@@ -393,8 +393,24 @@ def apl_wrapped(tokens, funcargs=[]):
     return ParsingData if not hideOutp else None
 
 
+introText = \
+    "PyAPL version '0.2.1'  |  Created by Matt Torrence  |  Interactive Mode\n" \
+    "Interactive Mode [NOTE: Input cursor may not appear with some consoles]\n" \
+    "--------------------  github.com/Torrencem/PyAPL  ---------------------\n"
+
+
+def launchAPL():
+    print(introText)
+    while True:
+        try:
+            code = apl(input())
+        except KeyboardInterrupt:
+            break
+        # Comparison with 'in' does not work
+        # with None
+        if code is not [] and code is not None:
+            print(code)
+
+
 if __name__ == '__main__':
-    while (True):
-        a = apl(input('>>>'))
-        if a is not None:
-            print(a)
+    launchAPL()

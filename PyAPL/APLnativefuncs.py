@@ -15,15 +15,19 @@ from fractions import gcd
 # Default behavior for APL is True
 ONE_BASED_ARRAYS = True
 
+
 def lcm(a, b):
     """Compute the lowest common multiple of a and b"""
     return a * b / gcd(a, b)
 
+
 def totalElements(arr):
     return reduce(operator.mul, arr.shape, 1)
 
+
 def isscalar(w):
     return w.shape[0] == 1
+
 
 # Returns: False for unmatched types [2 3 4 = 3 4]
 # 1 for scalar scalar [3 + 43]
@@ -40,8 +44,10 @@ def typeargs(a, w):
     else:
         return 2
 
+
 def arebool(a, w):
     return (float(a) in [0, 1]) and (float(w) in [0, 1])
+
 
 # NATIVE APL FUNCTION DEFINITIONS
 
@@ -49,9 +55,11 @@ def PLUS(a, w):
     '''Add two numbers together'''
     return np.array([float(a) + float(w)])
 
+
 def MINUS(a, w):
     '''Subtract two numbers'''
     return np.array([float(a) - float(w)])
+
 
 def DIVIDE(a, w):
     '''Divide two numbers.
@@ -60,18 +68,22 @@ def DIVIDE(a, w):
         raise ZeroDivisionError()
     return np.array([float(a) / float(w)])
 
+
 def MULTIPLY(a, w):
     '''Multiply numbers together'''
     return np.array([float(a) * float(w)])
+
 
 def POWER(a, w):
     '''Find ⍺ to the power of ⍵
         Returns complex numbers when expected'''
     return np.array([float(a) ** float(w)])
 
+
 def LOGBASE(a, w):
     '''Find log base ⍺ of ⍵'''
     return np.array([log(float(w), float(a))])
+
 
 def RESIDUE(a, w):
     '''Find residue (modulus) of ⍵ with repeated subtraction of ⍺'''
@@ -79,61 +91,75 @@ def RESIDUE(a, w):
     # http://stackoverflow.com/questions/14763722/python-modulo-on-floats
     return np.array([float(Decimal(str(float(w))) % Decimal(str(float(a))))])
 
+
 def CEILING(a, w):
     '''Return the greater of ⍺ and ⍵'''
     return w if float(w) > float(a) else a
+
 
 def FLOOR(a, w):
     '''Return the lesser of ⍺ and ⍵'''
     return a if float(w) > float(a) else w
 
+
 def CIRCLE(a, w):
     '''Return the corresponding trig function applied'''
     if int(a) not in (1, 2, 3, 5, 6, 7, -1, -2, -3, -5, -6, -7):
         raise NotImplementedError()
-    fun = { 1: sin , 2: cos , 3: tan , 5: sinh , 6: cosh , 7: tanh,
-           -1: asin,-2: acos,-3: atan,-5: asinh,-6: acosh,-7: atanh}[int(a)]
+    fun = {1: sin, 2: cos, 3: tan, 5: sinh, 6: cosh, 7: tanh,
+           -1: asin, -2: acos, -3: atan, -5: asinh, -6: acosh, -7: atanh}[int(a)]
     return np.array([fun(float(w))])
+
 
 def COMPEQ(a, w):
     '''Check if ⍺ and ⍵ are equal'''
     return np.array([int(float(a) == float(w))])
 
+
 def COMPNEQ(a, w):
     '''Check if ⍺ and ⍵ are not equal'''
     return np.array([int(float(a) != float(w))])
+
 
 def COMPLES(a, w):
     '''Check if ⍺ is less than ⍵'''
     return np.array([int(float(a) < float(w))])
 
+
 def COMPGRE(a, w):
     '''Check if ⍺ is greater than ⍵'''
     return np.array([int(float(a) > float(w))])
+
 
 def COMPLESQ(a, w):
     '''Check if ⍺ is less than or equal to ⍵'''
     return np.array([int(float(a) <= float(w))])
 
+
 def COMPGREQ(a, w):
     '''Check if ⍺ is greater than or equal to ⍵'''
     return np.array([int(float(a) >= float(w))])
+
 
 def BOOLAND(a, w):
     '''Perform a logical AND of the arguments'''
     return np.array([int(int(a) == 1 and int(w) == 1)])
 
+
 def BOOLOR(a, w):
     '''Perform a logical OR of the arguments'''
     return np.array([int(int(a) == 1 or int(w) == 1)])
+
 
 def LEASTCM(a, w):
     '''Find the least common multiple of the arguments'''
     return np.array([lcm(int(a), int(w))])
 
+
 def GREATESTCD(a, w):
     '''Find the greatest common denom of the arguments'''
     return np.array([gcd(int(a), int(w))])
+
 
 def RESHAPE(a, w):
     '''Reshape ⍵ to be of the shape ⍺'''
@@ -162,6 +188,7 @@ def RESHAPE(a, w):
         temp = np.array([tempravel[i] for i in range(int(totalNewElements))])
         return temp.reshape(list(map(int, list(a))))
 
+
 def HORROT(a, w):
     '''Horizontally rotate ⍵ ⍺ times'''
     # TODO: Check the shapes of a and w
@@ -172,6 +199,7 @@ def HORROT(a, w):
             0 - a[0 if flata else index])  # This is negative because APL rotates in the opposite direction as np
         temp[index] = np.roll(slice, rotby)
     return temp
+
 
 def VERTROT(a, w):
     '''Vertically rotate ⍵ ⍺ times'''
@@ -186,27 +214,33 @@ def VERTROT(a, w):
         temp[index] = np.roll(slice, rotby)
     return np.transpose(temp)
 
+
 # MONADIC FUNCTIONS
 
 def INVERT(w):
     '''Return 1 / ⍵'''
     return np.array([1 / float(w)])
 
+
 def EEXP(w):
     '''Return e to the ⍵'''
     return np.array([exp(float(w))])
+
 
 def NATLOG(w):
     '''Return the natural log of ⍵'''
     return np.array([log(float(w))])
 
+
 def ABS(w):
     '''Return the absolute value of ⍵'''
     return np.array([abs(float(w))])
 
+
 def PITIMES(w):
     '''Return pi times ⍵'''
     return np.array([pi * float(w)])
+
 
 def COUNT(w):
     '''Return a list of the numbers up to ⍵'''
@@ -214,17 +248,27 @@ def COUNT(w):
         raise TypeError()
     return np.array([i + 1 for i in range(int(w))])
 
+
 def SHAPE(w):
     '''Return the shape of ⍵'''
-    return np.array(w.shape)
+    # Check for leading ones in the shape
+    shape = w.shape
+    if shape[0] != 1:
+        return np.array(shape)
+    else:
+        # Trim the leading one
+        return np.array(shape[1:])
+
 
 def BOOLNOT(w):
     '''Return the negation of ⍵'''
-    return np.array([1-float(w)])
+    return np.array([1 - float(w)])
+
 
 def TRANSPOSE(w):
     '''Transposes ⍵'''
     return w.transpose()
+
 
 def VERTFLIP(w):
     '''Flip ⍵ vertically'''
@@ -232,19 +276,23 @@ def VERTFLIP(w):
         return w[::-1]
     return np.flipud(w)
 
+
 def HORFLIP(w):
     '''Flip ⍵ horizontally'''
     if len(w.shape) == 1:
         return w[::-1]
     return np.fliplr(w)
 
+
 def ROUNDUP(w):
     '''Round ⍵ up'''
     return np.array([ceil(float(w))])
 
+
 def ROUNDDOWN(w):
     '''Round ⍵ down'''
     return np.array([floor(float(w))])
+
 
 def RANDOM(w):
     '''Return a random number between 0 and ⍵'''
@@ -290,12 +338,12 @@ def ENCODE(a, w):
             ret.append([0.0])
         else:
             # pow is the highest power of the base that will be less than the number
-            pow = int(floor(log(number,base))) if not number==0 else 0 
+            pow = int(floor(log(number, base))) if not number == 0 else 0
             # Now, append digits to ret
-            ret.append([floor((number%(base**(p+1)))/base**p) for p in reversed(range(pow+1))])
+            ret.append([floor((number % (base ** (p + 1))) / base ** p) for p in reversed(range(pow + 1))])
     # Pad it with zeroes in order to make it a proper matrix
-    longest = max(ret,key=len) if ret else 0
-    newret = [[0] * (longest - len(row)) + row for row in ret]
+    longest = max(ret, key=len) if ret else 0
+    newret = [[0] * (len(longest) - len(row)) + row for row in ret]
     # This is to fix an issue with double-lists
     return np.array(newret[0] if scalara else newret)
 
@@ -304,6 +352,6 @@ def FIND(a, w):
     '''Return the first index of ⍵ in ⍺'''
     # TODO: Deal with nesting/dimensions
     for index, item in enumerate(a):
-        if abs(w - item) < .001: # Weird closeness function (arbitrary)
+        if abs(w - item) < .001:  # Weird closeness function (arbitrary)
             return np.array([index + (ONE_BASED_ARRAYS * 1)])
     return -1
