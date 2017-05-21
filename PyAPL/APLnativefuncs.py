@@ -340,7 +340,7 @@ def ENCODE(a, w):
             # pow is the highest power of the base that will be less than the number
             pow = int(floor(log(number, base))) if not number == 0 else 0
             # Now, append digits to ret
-            ret.append([floor((number % (base ** (p + 1))) / base ** p) for p in reversed(range(pow + 1))])
+            ret.append([floor((number % (base ** (p + 1))) / base ** p) for p in reversed(list(range(pow + 1)))])
     # Pad it with zeroes in order to make it a proper matrix
     longest = max(ret, key=len) if ret else 0
     newret = [[0] * (len(longest) - len(row)) + row for row in ret]

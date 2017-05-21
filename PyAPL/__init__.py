@@ -59,7 +59,7 @@ def applydi(func, a, w):
         raise NotImplementedError('Function not yet supported: ' + func)
     # TODO implement all of the built in functions
     if DEBUG_MODE:
-        print('applydi: ' + str(func) + ' ' + str(a) + ' ' + str(w))
+        print(('applydi: ' + str(func) + ' ' + str(a) + ' ' + str(w)))
 
     applied = []
     if func in scalarFuncs:
@@ -99,7 +99,7 @@ def applymo(func, w):
         raise NotImplementedError('Function not yet supported: ' + func)
 
     if DEBUG_MODE:
-        print('applymo: ' + str(func) + ' ' + str(w))
+        print(('applymo: ' + str(func) + ' ' + str(w)))
 
     if func in scalarFuncs + '~?':
         if w.shape == 0:
@@ -113,7 +113,7 @@ def applymo(func, w):
 
 def adverb(adv, func, w, userfunc=None):
     if DEBUG_MODE:
-        print('adverb: ' + str(adv) + ' ' + str(func) + ' ' + str(w))
+        print(('adverb: ' + str(adv) + ' ' + str(func) + ' ' + str(w)))
     # For lined arguments, transpose the array then at the end transpose it back
     ret = np.copy(w)  # Do not modify in place
     if adv in '\\/':
@@ -200,10 +200,10 @@ def apl_wrapped(tokens, funcargs=[]):
     for token in tokens:
         if DEBUG_MODE:
             print("\n")
-            print("⍝⍝ NS ⍝⍝   " + str(aplnamespace))
-            print("⍝⍝ OP ⍝⍝   " + str(opstack))
-            print("⍝⍝ PD ⍝⍝   " + str(ParsingData))
-            print("⍝⍝ TK ⍝⍝   " + str(token))
+            print(("⍝⍝ NS ⍝⍝   " + str(aplnamespace)))
+            print(("⍝⍝ OP ⍝⍝   " + str(opstack)))
+            print(("⍝⍝ PD ⍝⍝   " + str(ParsingData)))
+            print(("⍝⍝ TK ⍝⍝   " + str(token)))
 
         hideOutp = False
 
@@ -344,14 +344,14 @@ def apl_wrapped(tokens, funcargs=[]):
                             continue
                         # Assign the parsing data to the value in the namespace
                         if DEBUG_MODE:
-                            print("⍝⍝ AS ⍝⍝   " + str(token.value) + " := " + str(ParsingData))
+                            print(("⍝⍝ AS ⍝⍝   " + str(token.value) + " := " + str(ParsingData)))
                         aplnamespace[token.value] = ParsingData
                         opstack.pop()
                         hideOutp = True
                         continue
                     if not token.value in aplnamespace:
                         if DEBUG_MODE:
-                            print('Referring to unassigned variable : ' + token.value + ' [will use 0]')
+                            print(('Referring to unassigned variable : ' + token.value + ' [will use 0]'))
                         ParsingData = applydi(opstack.pop(), 0, ParsingData)
                     else:
                         get = aplnamespace[token.value]
@@ -402,7 +402,7 @@ def launchAPL():
     print(introText)
     while True:
         try:
-            code = apl(input('APL>'))
+            code = apl(eval(input('APL>')))
         except KeyboardInterrupt:
             break
         # Comparison with 'in' does not work
